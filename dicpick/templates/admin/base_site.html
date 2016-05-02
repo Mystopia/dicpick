@@ -1,0 +1,25 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" type="text/css" href="{% static "css/admin.css" %}" />
+{% endblock %}
+
+{% block branding %}
+  {{ block.super }}
+  <div class="dicpick-selectors">
+    <form>
+      <select id="camp-context-select">
+        {% for camp in dicpick_camps %}
+          <option value="{{ camp.id }}"{% if camp.id == dicpick_selected_camp_id %} selected{% endif %}>{{ camp.name }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+{% endblock %}
+
+{% block footer %}
+  {{ block.super }}
+  <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+  <script src="{% static "js/admin.js" %}"></script>
+{% endblock %}

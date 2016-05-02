@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2016 Materiality Labs.
+# Copyright 2016 Mystopia.
 
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
@@ -70,16 +70,6 @@ INSTALLED_APPS = (
   # First in the list, so it can overide the standard collectstatic command.
   'materiality.django.static',
 
-  # These must come before django.contrib.admin.
-  'admin_tools',
-  'admin_tools.theming',
-  'admin_tools.menu',
-  'admin_tools.dashboard',
-
-  # The admin_tools_stats admin_tools module.
-  'django_nvd3',
-  'admin_tools_stats',
-
   'django.contrib.admin',
   'django.contrib.auth',
   'django.contrib.contenttypes',
@@ -87,9 +77,6 @@ INSTALLED_APPS = (
   'django.contrib.sites',
   'django.contrib.messages',
   'django.contrib.staticfiles',
-
-  #'debug_toolbar',
-  #'pympler',
 
   'allauth',
   'allauth.account',
@@ -175,7 +162,6 @@ template_loaders = (
   # so we must try the filesystem loader before looking in any app dirs.
   'django.template.loaders.filesystem.Loader',
   'django.template.loaders.app_directories.Loader',
-  'admin_tools.template_loaders.Loader',
 )
 
 TEMPLATES = [

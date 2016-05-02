@@ -1,22 +1,23 @@
 # coding=utf-8
-# Copyright 2016 Materiality Labs.
+# Copyright 2016 Mystopia.
 
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+from allauth.account.views import logout
+from allauth.socialaccount.views import login_cancelled
+from allauth.socialaccount.providers.twitter import urls as twitter_urls
 from django.conf.urls import include, url
-
 from django.contrib import admin
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic import RedirectView, TemplateView
 
-from allauth.account.views import logout
-from allauth.socialaccount.views import login_cancelled
-from allauth.socialaccount.providers.twitter import urls as twitter_urls
+from dicpick.admin import dpadmin_site
 
 
 urlpatterns = [
-  url(r'^admin/', include(admin.site.urls)),
+  url(r'^admin/', admin.site.urls),
+  url(r'^dpadmin/', dpadmin_site.urls),
 
   # We selectively enable just the allauth urls we allow.
   url(r'^auth/', include(twitter_urls)),
