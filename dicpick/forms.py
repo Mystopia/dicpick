@@ -9,7 +9,7 @@ import re
 import requests
 from django.contrib.auth.models import User
 from django.forms import ModelForm, ValidationError, Form, FileField, URLField, TextInput, CharField, MultiValueField, \
-  MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet, Field
+  MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet
 from django.forms.utils import pretty_name
 from django.shortcuts import get_object_or_404
 
