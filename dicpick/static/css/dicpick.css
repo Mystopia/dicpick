@@ -37,7 +37,7 @@ form.formset .control-label {
 
 /* Prevent the select options from being temporarily visible before select2 initializes. */
 .with-select2 option {
-    visibility: hidden;
+    display: none;
 }
 
 /* Widths for various form tables. */

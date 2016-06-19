@@ -9,7 +9,8 @@ import re
 import requests
 from django.contrib.auth.models import User
 from django.forms import ModelForm, ValidationError, Form, FileField, URLField, TextInput, CharField, MultiValueField, \
-  MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet
+  MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet, Field
+from django.forms.utils import pretty_name
 from django.shortcuts import get_object_or_404
 
 from dicpick.models import Event, Tag, TaskType, Participant, Task
@@ -21,6 +22,15 @@ class DicPickModelForm(ModelForm):
     super(DicPickModelForm, self).__init__(*args, **kwargs)
     for field in self.fields.values():
       field.error_messages = {'required': 'Required'}
+
+  def has_designator(self):
+    return hasattr(self.Meta, 'designator_field')
+
+  def designator_name(self):
+    return pretty_name(self.Meta.designator_field)
+
+  def designator(self):
+    return getattr(self.instance, self.Meta.designator_field)
 
 
 class EventForm(DicPickModelForm):
@@ -91,49 +101,17 @@ class TaskByTypeForm(FormWithTags):
     }
 
 
-class LabelWidget(MultiWidget):
-  task_types_by_id = None  # Will be set on each instance when the form is created.
-
-  def __init__(self, attrs=None):
-    self.users_by_id = None  # Will be set when the form is created.
-    super(LabelWidget, self).__init__((HiddenInput, TextInput(attrs={'class': 'task-type-widget',
-                                                                     'disabled': True})), attrs)
-  def decompress(self, task_type_id):
-    if task_type_id is None:
-      return [None, '']
-    task_type = self.task_types_by_id[task_type_id]
-    return [task_type_id, task_type.name]
-
-
-class LabelField(MultiValueField):
-  def __init__(self, *args, **kwargs):
-    super(LabelField, self).__init__((CharField(), CharField(required=False)),
-                                     *args, widget=LabelWidget(), require_all_fields=False, **kwargs)
-
-  def compress(self, data_list):
-    task_type_id = data_list[0]
-    return get_object_or_404(TaskType, pk=task_type_id)
-
-
 class TaskByDateForm(FormWithTags):
   class Meta:
     model = Task
-    fields = ['task_type', 'num_people', 'score', 'tags']
+    fields = ['num_people', 'score', 'tags']
     qualifier = 'task'
     help_texts = {
       'num_people': 'Number of people needed to perform this task on this day',
       'score': 'Score each person performing this task on this day earns for doing so',
       'tags': 'Only people with at least one of these tags can be assigned this task on this day'
     }
-
-  task_type = LabelField()
-
-  def __init__(self, *args, **kwargs):
-    # Apply the hack to pass the id -> task_type map into the widget.
-    # See TasksByDateFormset below for details.
-    task_types_by_id = kwargs.pop('task_types_by_id')
-    super(TaskByDateForm, self).__init__(*args, **kwargs)
-    self.fields['task_type'].widget.task_types_by_id = task_types_by_id
+    designator_field = 'task_type'
 
 
 class UserWidget(MultiWidget):
@@ -277,23 +255,6 @@ class ModelFormsetWithTagChoices(TagChoicesFormsetMixin, BaseModelFormSet):
   Otherwise the standard django code will re-evaluate the queryset (and hit the database) once per form.
   """
   pass
-
-
-class TasksByDateFormset(ModelFormsetWithTagChoices):
-  def __init__(self, *args, **kwargs):
-    super(TasksByDateFormset, self).__init__(*args, **kwargs)
-    # Hack to pass in the id -> task_type mapping to the custom widget, so that it doesn't have to hit
-    # the database once per form in the formset.
-    self._task_types_by_id = {}
-    for form in self.forms:
-      task = form.instance
-      if task and task.task_type_id:
-        self._task_types_by_id[task.task_type.id] = task.task_type
-
-  def get_form_kwargs(self, index):
-    kwargs = super(TasksByDateFormset, self).get_form_kwargs(index)
-    kwargs['task_types_by_id'] = self._task_types_by_id
-    return kwargs
 
 
 class ParticipantInlineFormset(InlineFormsetWithTagChoices):

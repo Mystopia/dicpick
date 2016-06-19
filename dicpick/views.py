@@ -18,7 +18,7 @@ from django.views.generic import CreateView, UpdateView, DetailView, DeleteView,
 
 from dicpick.forms import EventForm, TagForm, TaskTypeForm, ParticipantForm, \
   ParticipantImportForm, TaskByTypeForm, TaskByDateForm, ParticipantInlineFormset, InlineFormsetWithTagChoices, \
-  TasksByDateFormset
+  ModelFormsetWithTagChoices
 from dicpick.models import Event, Camp, Participant, TaskType, Task
 
 # Helper mixin.
@@ -322,7 +322,7 @@ class TasksByDateUpdate(EventRelatedFormsetMixin, FormView):
 
   def get_form_class(self):
     return modelformset_factory(Task, TaskByDateForm, extra=0, can_delete=False,
-                                formset=TasksByDateFormset)
+                                formset=ModelFormsetWithTagChoices)
 
   def get_form_kwargs(self):
     kwargs = super(TasksByDateUpdate, self).get_form_kwargs()
