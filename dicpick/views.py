@@ -1,8 +1,8 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
 
 import datetime
 import json
@@ -14,14 +14,12 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.forms import inlineformset_factory, modelformset_factory
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import CreateView, UpdateView, DetailView, DeleteView, FormView, TemplateView
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView
 
-from dicpick.forms import EventForm, TagForm, TaskTypeForm, ParticipantForm, \
-  ParticipantImportForm, TaskByTypeForm, TaskByDateForm, ParticipantInlineFormset, InlineFormsetWithTagChoices, \
-  ModelFormsetWithTagChoices
-from dicpick.models import Event, Camp, Participant, TaskType, Task
-
-# Helper mixin.
+from dicpick.forms import (EventForm, InlineFormsetWithTagChoices, ModelFormsetWithTagChoices,
+                           ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
+                           TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm)
+from dicpick.models import Camp, Event, Participant, Task, TaskType
 from dicpick.util import create_user
 
 

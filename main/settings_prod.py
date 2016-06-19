@@ -1,13 +1,12 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
 
 import os
 
 import dj_database_url
-
 
 # SECURITY WARNING: don't run with debug turned on in production!
 if 'TEMPORARY_PROD_DEBUG_MODE_REMOVE_ME' in os.environ:

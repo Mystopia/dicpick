@@ -1,19 +1,19 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
 
 import re
 
 import requests
 from django.contrib.auth.models import User
-from django.forms import ModelForm, ValidationError, Form, FileField, URLField, TextInput, CharField, MultiValueField, \
-  MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet
+from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, DateInput, FileField, Form, HiddenInput,
+                          ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError)
 from django.forms.utils import pretty_name
 from django.shortcuts import get_object_or_404
 
-from dicpick.models import Event, Tag, TaskType, Participant, Task
+from dicpick.models import Event, Participant, Tag, Task, TaskType
 from dicpick.util import create_user
 
 

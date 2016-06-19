@@ -1,13 +1,14 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
 
 from django.conf.urls import url
+# Monkeypatch email uniqueness.
+from django.contrib.auth.models import User
 
 from dicpick import views
-
 
 urlpatterns = [
   url(r'^$', views.user_home, name='user_home'),
@@ -31,6 +32,4 @@ urlpatterns = [
 ]
 
 
-# Monkeypatch email uniqueness.
-from django.contrib.auth.models import User
 User._meta.get_field('email')._unique = True

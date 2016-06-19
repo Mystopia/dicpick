@@ -1,19 +1,17 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
 
+import debug_toolbar
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic import RedirectView, TemplateView
 
-import debug_toolbar
-
 from dicpick import urls as dicpick_urls
-
 
 urlpatterns = [
   url(r'^admin/', admin.site.urls),
