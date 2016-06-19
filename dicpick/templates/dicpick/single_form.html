@@ -1,0 +1,25 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/form_base.html' %}
+{% load form_helpers %}
+
+{% block form_class %}single-form{% endblock form_class %}
+
+{% block form_content %}
+  {% for field in form %}
+    {% if field.is_hidden %}
+      {{ field }}
+    {% else %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}" class="control-label col-sm-2">
+          {{ field.label|safe }}{% if field.field.required %}<span class="asterisk-field">*</span>{% endif %}
+        </label>
+        <div class="{% if field.errors %}has-error{% endif %} col-sm-4">
+          {{ field|add_standard_classes }}
+          {% for error in field.errors %}
+            <span class="help-block field-error"><strong>{{ error }}</strong></span>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  {% endfor %}
+{% endblock %}

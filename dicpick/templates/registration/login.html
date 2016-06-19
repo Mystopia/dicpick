@@ -1,11 +1,6 @@
 {# Copyright 2016 Mystopia. #}
-{% extends 'dicpick/base.html' %}
-{% load crispy_forms_tags %}
+{% extends 'dicpick/single_form.html' %}
 
-{% block content %}
+{% block heading %}Login{% endblock heading %}
 
-  <legend>Login</legend>
-
-  {% crispy form %}
-
-{% endblock content %}
+{% block cancel_url %}/{% endblock cancel_url %}

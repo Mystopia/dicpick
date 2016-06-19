@@ -27,14 +27,11 @@ body {
     font-weight: bold;
 }
 
-/* An unfortunate artifact of how we use Bootstrap to render the inline forms in table rows causes the
-   delete checkbox form-group divs to be created outside the table, and this creates unnecessary
-   vertical space for all those empty divs. */
-.table-container > div.form-group {
-    display: none;
+form.single-form .control-label {
+    text-align: right;
 }
 
-.form-horizontal .control-label {
+form.formset .control-label {
     text-align: left;
 }
 
@@ -57,20 +54,26 @@ body {
 
 /* Default widget widths. */
 
-.table-container .textinput {
+.table-container .widget-textinput {
     width: 250px;
 }
 
-.table-container .dateinput {
+.table-container .widget-dateinput {
     width: 100px;
 }
 
-.table-container .user-widget {
+.table-container .widget-userwidget {
     width: 400px;
 }
 
-.table-container .numberinput {
+.table-container .widget-numberinput {
     width: 70px;
+}
+
+.table-container .widget-checkboxinput {
+    height: 34px;
+    width: 100%;
+    margin: 0 0 0 6px;
 }
 
 .table-container select {
@@ -87,17 +90,6 @@ body {
 
 .table > tbody > tr > td.create-only-field-legend {
     vertical-align: middle;
-}
-
-/* Fix some weird artifacts of the interaction between formsets, crispyforms and bootstrap. */
-
-.inline-formset-tbody .checkbox {
-    margin-top: -1px;
-}
-
-.inline-formset-tbody .checkbox input[type=checkbox], .checkbox-inline {
-    margin-top: 10px;
-    margin-left: 15px;
 }
 
 a.faq-anchor {

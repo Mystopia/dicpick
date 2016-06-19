@@ -28,12 +28,12 @@ LOGGING = {
   'handlers': {
     'console': {
       'class': 'logging.StreamHandler',
-      'level': 'DEBUG',
+      'level': 'INFO',
       'formatter': 'default'
     },
     'file': {
       'class': 'logging.FileHandler',
-      'level': 'DEBUG',
+      'level': 'INFO',
       'filename': '/tmp/sql_debug.log',
       'formatter': 'default'
     },
@@ -59,7 +59,7 @@ LOGGING = {
     },
     'django.db.backends': {
       'handlers': ['file', 'console'],
-      'level': 'DEBUG',  # Set to DEBUG to see live SQL queries.
+      'level': 'INFO',  # Set to DEBUG to see live SQL queries.
       'propagate': False,
     },
   }
@@ -86,8 +86,6 @@ INSTALLED_APPS = (
   'django.contrib.staticfiles',
 
   #'debug_toolbar',
-
-  'crispy_forms',
 
   'allauth',
   'allauth.account',
@@ -178,8 +176,6 @@ TEMPLATES = [
     },
   },
 ]
-
-CRISPY_TEMPLATE_PACK = 'bootstrap3'
 
 MATERIALITY_DJANGO_STATIC_IGNORE_FILE = 'main/ignore_patterns.txt'
 

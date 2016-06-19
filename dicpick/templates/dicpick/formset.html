@@ -1,0 +1,61 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/form_base.html' %}
+{% load form_helpers %}
+
+{% block form_class %}formset{% endblock form_class %}
+
+{% block form_content %}
+  <div>
+    {{ form.management_form }}
+  </div>
+
+  <div class="table-container {{ form.forms.0.Meta.qualifier }}-table-container">
+    <table class="table table-striped table-condensed table-hover">
+      <thead>
+      <tr>
+        <th>#</th>
+        {% for field in form.forms.0 %}
+          {% if field.label and not field.is_hidden %}
+            <th for="{{ field.auto_id }}"
+                class="control-label {% if field.field.required %}requiredField{% endif %}">
+              <span data-toggle="tooltip" data-placement="top" title="{{ field.help_text|safe }}">
+                {{ field.label|safe }}{% if field.field.required %}<span class="asteriskField">*</span>{% endif %}
+              </span>
+            </th>
+          {% endif %}
+        {% endfor %}
+      </tr>
+      </thead>
+
+      <tbody class="inline-formset-tbody">
+      {% for inline_form in form %}
+        {% if form_show_errors and inline_form.non_field_errors and not inline_form.is_extra %}
+          <div class="alert alert-block alert-danger">
+            {% if form_error_title %}<h4 class="alert-heading">{{ form_error_title }}</h4>{% endif %}
+            <ul>
+              {{ form.non_field_errors|unordered_list }}
+            </ul>
+          </div>
+        {% endif %}
+
+        <tr>
+          <td class="table-row-counter">{{ forloop.counter }}</td>
+          {% for field in inline_form %}
+            {% if field.is_hidden %}
+              {{ field }}
+            {% else %}
+              <td class="{% if field.errors %}has-error{% endif %}">
+                {{ field|add_standard_classes }}
+                {% for error in field.errors %}
+                  <span class="help-block field-error"><strong>{{ error }}</strong></span>
+                {% endfor %}
+              </td>
+            {% endif %}
+          {% endfor %}
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+{% endblock %}

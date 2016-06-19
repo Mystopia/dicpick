@@ -1,0 +1,6 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/formset.html' %}
+
+{% block heading %}{{ event.header }}{% endblock heading %}
+
+{% block cancel_url %}{{ event.get_absolute_url }}{% endblock cancel_url %}

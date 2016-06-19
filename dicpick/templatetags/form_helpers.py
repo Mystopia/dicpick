@@ -12,6 +12,14 @@ from django.utils.safestring import mark_safe
 register = template.Library()
 
 
+@register.filter
+def add_standard_classes(bound_field):
+  widget_name = type(bound_field.field.widget).__name__.lower()
+  form_control_class = '' if widget_name == 'checkboxinput' else 'form-control'
+  css_class = '{} field-{} widget-{}'.format(form_control_class, bound_field.name, widget_name)
+  return bound_field.as_widget(attrs={'class':css_class})
+
+
 @register.filter(needs_autoescape=True)
 def lightweight_formatting(text, autoescape=True):
   if autoescape:

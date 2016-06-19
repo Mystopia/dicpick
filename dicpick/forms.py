@@ -7,7 +7,6 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 import re
 
 import requests
-from crispy_forms.helper import FormHelper
 from django.contrib.auth.models import User
 from django.forms import ModelForm, ValidationError, Form, FileField, URLField, TextInput, CharField, MultiValueField, \
   MultiWidget, HiddenInput, DateInput, BaseInlineFormSet, BaseModelFormSet
@@ -17,7 +16,14 @@ from dicpick.models import Event, Tag, TaskType, Participant, Task
 from dicpick.util import create_user
 
 
-class EventForm(ModelForm):
+class DicPickModelForm(ModelForm):
+  def __init__(self, *args, **kwargs):
+    super(DicPickModelForm, self).__init__(*args, **kwargs)
+    for field in self.fields.values():
+      field.error_messages = {'required': 'Required'}
+
+
+class EventForm(DicPickModelForm):
   class Meta:
     model = Event
     fields = ['name', 'slug', 'start_date', 'end_date']
@@ -33,7 +39,7 @@ class EventForm(ModelForm):
     return data
 
 
-class FormWithTags(ModelForm):
+class FormWithTags(DicPickModelForm):
   """Form base that accepts tag_choices instead of attempting to compute them.
 
   Computing them would involve re-evaluating the same queryset for every form in a formset.
@@ -45,7 +51,7 @@ class FormWithTags(ModelForm):
     tags_field.choices = [(tags_field.prepare_value(obj), tags_field.label_from_instance(obj)) for obj in tags]
 
 
-class TagForm(ModelForm):
+class TagForm(DicPickModelForm):
   class Meta:
     model = Tag
     fields = ['name']
@@ -244,14 +250,6 @@ class ParticipantImportForm(Form):
         raise ValidationError('Invalid JSON at {}'.format(url))
 
 
-class EventFormHelper(FormHelper):
-  def __init__(self, *args, **kwargs):
-    super(EventFormHelper, self).__init__(*args, **kwargs)
-    self.form_tag = False
-    self.label_class = 'col-lg-2'
-    self.field_class = 'col-lg-4'
-
-
 class TagChoicesFormsetMixin(object):
   def __init__(self, *args, **kwargs):
     event = kwargs.pop('event')
@@ -313,10 +311,3 @@ class ParticipantInlineFormset(InlineFormsetWithTagChoices):
     kwargs = super(ParticipantInlineFormset, self).get_form_kwargs(index)
     kwargs['users_by_id'] = self._users_by_id
     return kwargs
-
-
-class TableFormsetHelper(FormHelper):
-  def __init__(self, *args, **kwargs):
-    super(TableFormsetHelper, self).__init__(*args, **kwargs)
-    self.template = 'dicpick/table_formset.html'
-    self.form_tag = False

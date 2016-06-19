@@ -8,7 +8,6 @@ import datetime
 import json
 import textwrap
 
-from contexttimer import Timer
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -17,7 +16,7 @@ from django.forms import inlineformset_factory, modelformset_factory
 from django.shortcuts import get_object_or_404, render
 from django.views.generic import CreateView, UpdateView, DetailView, DeleteView, FormView, TemplateView
 
-from dicpick.forms import EventForm, TableFormsetHelper, TagForm, TaskTypeForm, EventFormHelper, ParticipantForm, \
+from dicpick.forms import EventForm, TagForm, TaskTypeForm, ParticipantForm, \
   ParticipantImportForm, TaskByTypeForm, TaskByDateForm, ParticipantInlineFormset, InlineFormsetWithTagChoices, \
   TasksByDateFormset
 from dicpick.models import Event, Camp, Participant, TaskType, Task
@@ -91,12 +90,10 @@ class EventMixin(EventRelatedMixin):
 
 class EventRelatedFormMixin(EventRelatedTemplateMixin):
   """Mixin for views that modify data on or under a single event."""
-  template_name = 'dicpick/event_related_form.html'
   help_text = ''
 
   def get_context_data(self, **kwargs):
     data = super(EventRelatedFormMixin, self).get_context_data(**kwargs)
-    data['helper'] = self.form_helper_class()
     data['legend'] = self.legend
     data['help_text'] = self.help_text
     return data
@@ -105,13 +102,20 @@ class EventRelatedFormMixin(EventRelatedTemplateMixin):
     return self.event.get_absolute_url()
 
 
-class EventFormMixin(EventMixin, EventRelatedFormMixin):
+class EventRelatedSingleFormMixin(EventRelatedFormMixin):
+  template_name = 'dicpick/event_related_single_form.html'
+
+
+class EventRelatedFormsetMixin(EventRelatedFormMixin):
+  template_name = 'dicpick/event_related_formset.html'
+
+
+class EventFormMixin(EventMixin, EventRelatedSingleFormMixin):
   """Mixin for views that modify the direct properties of a single event.
 
   Note the diamond multiple inheritance of EventRelatedMixin.
   """
   form_class = EventForm
-  form_helper_class = EventFormHelper
   legend = 'Edit event'
 
   def form_valid(self, form):
@@ -140,9 +144,8 @@ class EventDetail(EventMixin, DetailView):
 
 # Event-related formset views.
 
-class EventRelatedFormsetUpdate(EventRelatedFormMixin, FormView):
+class EventRelatedFormsetUpdate(EventRelatedFormsetMixin, FormView):
   """Base class for views that update 1:many data belonging to a single event via foreign key."""
-  form_helper_class = TableFormsetHelper
 
   @staticmethod
   def create_form_class(single_model_form_class, formset_base_class=InlineFormsetWithTagChoices):
@@ -204,9 +207,8 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
       return super(ParticipantsUpdate, self).form_valid(formset)
 
 
-class ParticipantsImport(EventRelatedFormMixin, FormView):
+class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
   form_class = ParticipantImportForm
-  form_helper_class = EventFormHelper
   legend = 'Upload Participant JSON'
   help_text = textwrap.dedent("""
     Provide a file containing JSON with the following format:
@@ -269,9 +271,7 @@ class TasksByType(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_type.html'
 
 
-class TasksByTypeUpdate(EventRelatedFormMixin, FormView):
-  form_helper_class = TableFormsetHelper
-
+class TasksByTypeUpdate(EventRelatedFormsetMixin, FormView):
   @property
   def legend(self):
     return 'Tweak data for {} tasks'.format(self.task_type.name)
@@ -311,9 +311,7 @@ class TasksByDate(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_date.html'
 
 
-class TasksByDateUpdate(EventRelatedFormMixin, FormView):
-  form_helper_class = TableFormsetHelper
-
+class TasksByDateUpdate(EventRelatedFormsetMixin, FormView):
   @property
   def legend(self):
     return 'Tweak data for tasks on {}'.format(self.date)

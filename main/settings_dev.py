@@ -36,5 +36,11 @@ DATABASES = {
 }
 
 
+WITH_CACHING = False
 def maybe_cache_templates(loaders):
-  return loaders  # No caching.
+  if WITH_CACHING:
+    return (
+      ('django.template.loaders.cached.Loader', loaders),
+    )
+  else:
+    return loaders  # No caching.

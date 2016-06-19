@@ -13,12 +13,11 @@ from django.views.generic import RedirectView, TemplateView
 import debug_toolbar
 
 from dicpick import urls as dicpick_urls
-from main.custom_auth_forms import CustomAuthenticationForm
 
 
 urlpatterns = [
   url(r'^admin/', admin.site.urls),
-  url(r'^accounts/login/$', auth_views.login, {'authentication_form': CustomAuthenticationForm}),
+  url(r'^accounts/login/$', auth_views.login),
   url('^accounts/', include('django.contrib.auth.urls')),
 
   url(r'^faq/$', TemplateView.as_view(template_name='dicpick/faq.html'), name='faq'),
