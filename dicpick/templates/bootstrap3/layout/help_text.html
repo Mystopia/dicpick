@@ -1,0 +1,10 @@
+{# We override crispy-forms' standard help_text.html to add the hide_help_text check. #}
+{# This allows us to prevent repeating the help text in each row of a formset table. #}
+{# We use a tooltip on the header instead. #}
+{% if field.help_text and not hide_help_text %}
+  {% if help_text_inline %}
+    <span id="hint_{{ field.auto_id }}" class="help-block">{{ field.help_text|safe }}</span>
+  {% else %}
+    <p id="hint_{{ field.auto_id }}" class="help-block">{{ field.help_text|safe }}</p>
+  {% endif %}
+{% endif %}

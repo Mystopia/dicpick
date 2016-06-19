@@ -1,0 +1,15 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+
+{% block content %}
+
+  <legend>Are you sure you want to delete event "{{ event.name }}" and all its data?</legend>
+  <h4>This cannot be undone!</h4>
+
+  <form method="post">
+  {% csrf_token %}
+    <input class="btn btn-danger" type="submit">
+    <a role="button" class="btn btn-default" href="{% url "dicpick:camp_detail" event.camp.slug %}">Cancel</a>
+  </form>
+
+{% endblock content %}

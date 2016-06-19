@@ -1,0 +1,10 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+
+{% block content %}
+  <h3 class="form-event-header">{{ event.header }}</h3>
+  <legend>Tweak Task Details</legend>
+  {% for task_type in event.task_types.all %}
+    <h4><a href="{% url 'dicpick:tasks_by_type_update' event.camp.slug event.slug task_type.id %}">{{ task_type }}</a></h4>
+  {% endfor %}
+{% endblock content %}

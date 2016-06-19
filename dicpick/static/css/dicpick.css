@@ -1,0 +1,129 @@
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+body {
+    margin-bottom: 24px;
+}
+
+.intro-text {
+    width: 600px;
+    background-color: white;
+    margin-left: auto;
+    margin-right: auto;
+    border: 2px solid #e1e8ed;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.required-field-legend {
+    font-weight: bold;
+    margin-bottom: 1.5em;
+}
+
+.form-help-text {
+    font-weight: bold;
+}
+
+/* An unfortunate artifact of how we use Bootstrap to render the inline forms in table rows causes the
+   delete checkbox form-group divs to be created outside the table, and this creates unnecessary
+   vertical space for all those empty divs. */
+.table-container > div.form-group {
+    display: none;
+}
+
+.form-horizontal .control-label {
+    text-align: left;
+}
+
+/* Widths for various form tables. */
+.tag-table-container {
+    width: 300px;
+}
+
+.tasktype-table-container {
+    width: 850px;
+}
+
+.table-container.tasktype-table-container select.selectmultiple {
+    width: 300px;
+}
+
+.participant-table-container {
+    width: 850px;
+}
+
+/* Default widget widths. */
+
+.table-container .textinput {
+    width: 250px;
+}
+
+.table-container .dateinput {
+    width: 100px;
+}
+
+.table-container .user-widget {
+    width: 400px;
+}
+
+.table-container .numberinput {
+    width: 70px;
+}
+
+.table-container select {
+    width: 300px;
+}
+
+.table-container select.selectmultiple {
+    width: 400px;
+}
+
+.table > tbody > tr > td.table-row-counter {
+    vertical-align: middle;
+}
+
+.table > tbody > tr > td.create-only-field-legend {
+    vertical-align: middle;
+}
+
+/* Fix some weird artifacts of the interaction between formsets, crispyforms and bootstrap. */
+
+.inline-formset-tbody .checkbox {
+    margin-top: -1px;
+}
+
+.inline-formset-tbody .checkbox input[type=checkbox], .checkbox-inline {
+    margin-top: 10px;
+    margin-left: 15px;
+}
+
+a.faq-anchor {
+    /* Compensate for the fixed header. */
+    display: block;
+    position: relative;
+    top: -60px;
+    visibility: hidden;
+}
+
+.footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    /* Set the fixed height of the footer here */
+    height: 24px;
+    border-top: 1px solid #e1e8ed;
+    background-color: #f5f5f5;
+}
+
+.footer p {
+    width: 50%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.footer a {
+    margin-left: 30px;
+}

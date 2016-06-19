@@ -1,11 +1,11 @@
 {# Copyright 2016 Mystopia. #}
-
 {% extends 'dicpick/base.html' %}
-
-{% load staticfiles %}
+{% load crispy_forms_tags %}
 
 {% block content %}
-  <div class="intro-text">
-  <h2>Privacy Statement</h2>
-  </div>
+
+  <legend>Login</legend>
+
+  {% crispy form %}
+
 {% endblock content %}

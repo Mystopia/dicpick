@@ -1,0 +1,23 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+{% load crispy_forms_tags %}
+{% load form_helpers %}
+
+{% block content %}
+  <h3 class="form-event-header">{{ event.header }}</h3>
+  <legend>{{ legend }}</legend>
+  {% if help_text %}<div class="form-help-text">{{ help_text|lightweight_formatting }}</div><br>{% endif %}
+
+  <form {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} method="post" class="form-horizontal with-select2">
+    {% block form_content %}
+      {% csrf_token %}
+      {% crispy form helper %}
+    {% endblock form_content %}
+    {% if form|has_required_fields %}
+      <div class="required-field-legend">* Required field</div>
+    {% endif %}
+    <input class="btn btn-primary" type="submit" value="Submit">
+    <a role="button" class="btn btn-default" href="{{ event.get_absolute_url }}">Cancel</a>
+  </form>
+
+{% endblock content %}

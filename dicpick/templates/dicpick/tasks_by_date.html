@@ -1,0 +1,12 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+{% load date_helpers %}
+
+{% block content %}
+  <h3 class="form-event-header">{{ event.header }}</h3>
+  <legend>Tweak Task Details</legend>
+  {% for date in event.date_range %}
+    <h4><a href="{% url 'dicpick:tasks_by_date_update' event.camp.slug event.slug date|to_slug %}">{{ date|to_pretty_str }}</a></h4>
+  {% endfor %}
+{% endblock content %}
+

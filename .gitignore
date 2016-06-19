@@ -53,6 +53,7 @@ coverage.xml
 # Django stuff:
 *.log
 staticfiles/
+*/static/local/
 
 # Sphinx documentation
 docs/_build/
@@ -66,7 +67,7 @@ target/
 # Backup files
 *.bak
 
-# Materiality stuff
+# Repo setup stuff
 .bootstrap
 venv/
 pgsql/

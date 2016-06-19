@@ -1,0 +1,14 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+
+  <legend>Hello {{ user }}</legend>
+  <ul>
+  {% for camp in camps %}
+    <li><a href="{% url 'dicpick:camp_detail' camp.slug %}">{{ camp.name }}</a></li>
+  {% endfor %}
+  </ul>
+
+{% endblock content %}

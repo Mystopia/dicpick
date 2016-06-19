@@ -1,0 +1,17 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+
+{% block content %}
+  <h2>{{ event.camp.name }}: Admin for {{ event.name }}</h2>
+  <h3>Event</h3>
+  <h4><a href="{% url 'dicpick:event_update' event.camp.slug event.slug %}">Edit Event Details</a></h4>
+  <h4><a href="{% url 'dicpick:tags_update' event.camp.slug event.slug %}">Edit Tags</a></h4>
+  <h4><a href="{% url 'dicpick:event_delete' event.camp.slug event.slug %}">Delete Event</a></h4>
+  <h3>Participants</h3>
+  <h4><a href="{% url 'dicpick:participants_import' event.camp.slug event.slug %}">Import Participants</a></h4>
+  <h4><a href="{% url 'dicpick:participants_update' event.camp.slug event.slug %}">Edit Participants</a></h4>
+  <h3>Tasks</h3>
+  <h4><a href="{% url 'dicpick:task_types_update' event.camp.slug event.slug %}">Edit Task Types</a></h4>
+  <h4><a href="{% url 'dicpick:tasks_by_type' event.camp.slug event.slug %}">Tweak Tasks By Type</a></h4>
+  <h4><a href="{% url 'dicpick:tasks_by_date' event.camp.slug event.slug %}">Tweak Tasks By Date</a></h4>
+{% endblock content %}

@@ -1,6 +1,6 @@
 #!/usr/bin/env ./venv/bin/python
 # coding=utf-8
-# Copyright 2015 Materiality Labs.
+# Copyright 2016 Mystopia.
 
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)

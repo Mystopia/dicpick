@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2016 Materiality Labs.
+# Copyright 2016 Mystopia.
 
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
@@ -28,9 +28,15 @@ LOGGING = {
   'handlers': {
     'console': {
       'class': 'logging.StreamHandler',
-      'level': 'INFO',
+      'level': 'DEBUG',
       'formatter': 'default'
-    }
+    },
+    'file': {
+      'class': 'logging.FileHandler',
+      'level': 'DEBUG',
+      'filename': '/tmp/sql_debug.log',
+      'formatter': 'default'
+    },
   },
   'loggers': {
     # Everything will propagate to the root logger.  Note that the special name 'root' represents the logger at
@@ -52,8 +58,9 @@ LOGGING = {
       'level': 'INFO'
     },
     'django.db.backends': {
-      'handlers': ['console'],
-      'level': 'INFO'  # Set to DEBUG to see live SQL queries.
+      'handlers': ['file', 'console'],
+      'level': 'DEBUG',  # Set to DEBUG to see live SQL queries.
+      'propagate': False,
     },
   }
 }
@@ -70,16 +77,6 @@ INSTALLED_APPS = (
   # First in the list, so it can overide the standard collectstatic command.
   'materiality.django.static',
 
-  # These must come before django.contrib.admin.
-  'admin_tools',
-  'admin_tools.theming',
-  'admin_tools.menu',
-  'admin_tools.dashboard',
-
-  # The admin_tools_stats admin_tools module.
-  'django_nvd3',
-  'admin_tools_stats',
-
   'django.contrib.admin',
   'django.contrib.auth',
   'django.contrib.contenttypes',
@@ -89,34 +86,19 @@ INSTALLED_APPS = (
   'django.contrib.staticfiles',
 
   #'debug_toolbar',
-  #'pympler',
+
+  'crispy_forms',
 
   'allauth',
   'allauth.account',
   'allauth.socialaccount',
   'allauth.socialaccount.providers.twitter',
 
-  'dicpick',
+  'dicpick.apps.DicPickConfig',
 )
 
-DEBUG_TOOLBAR_PANELS = [
-  'debug_toolbar.panels.versions.VersionsPanel',
-  'debug_toolbar.panels.timer.TimerPanel',
-  'debug_toolbar.panels.settings.SettingsPanel',
-  'debug_toolbar.panels.headers.HeadersPanel',
-  'debug_toolbar.panels.request.RequestPanel',
-  'debug_toolbar.panels.sql.SQLPanel',
-  'debug_toolbar.panels.staticfiles.StaticFilesPanel',
-  'debug_toolbar.panels.templates.TemplatesPanel',
-  'debug_toolbar.panels.cache.CachePanel',
-  'debug_toolbar.panels.signals.SignalsPanel',
-  'debug_toolbar.panels.logging.LoggingPanel',
-  'debug_toolbar.panels.redirects.RedirectsPanel',
-  #'debug_toolbar.panels.profiling.ProfilingPanel',  # TODO: Breaks admin. Figure out why.
-  #'pympler.panels.MemoryPanel',
-]
-
 MIDDLEWARE_CLASSES = (
+  #'debug_toolbar.middleware.DebugToolbarMiddleware',
   'django.contrib.sessions.middleware.SessionMiddleware',
   'django.middleware.common.CommonMiddleware',
   'django.middleware.csrf.CsrfViewMiddleware',
@@ -134,7 +116,6 @@ AUTHENTICATION_BACKENDS = (
   'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-LOGIN_URL = 'twitter_login'
 LOGIN_REDIRECT_URL = 'main'
 
 ROOT_URLCONF = 'main.urls'
@@ -175,7 +156,6 @@ template_loaders = (
   # so we must try the filesystem loader before looking in any app dirs.
   'django.template.loaders.filesystem.Loader',
   'django.template.loaders.app_directories.Loader',
-  'admin_tools.template_loaders.Loader',
 )
 
 TEMPLATES = [
@@ -199,4 +179,12 @@ TEMPLATES = [
   },
 ]
 
+CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
 MATERIALITY_DJANGO_STATIC_IGNORE_FILE = 'main/ignore_patterns.txt'
+
+DATE_INPUT_FORMATS = [
+  '%m/%d/%Y'
+]
+
+DEBUG_TOOLBAR_PATCH_SETTINGS = False

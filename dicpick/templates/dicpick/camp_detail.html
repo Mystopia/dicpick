@@ -1,0 +1,14 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/base.html' %}
+
+{% block content %}
+  <h2>Events for {{ camp.name }}</h2>
+  <a href="{% url 'dicpick:event_create' camp.slug %}">New Event</a>
+  <ul>
+    {% for event in camp.events.all %}
+      <li>
+        <a href="{% url 'dicpick:event_detail' camp.slug event.slug %}">{{ event.name }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+{% endblock content %}
