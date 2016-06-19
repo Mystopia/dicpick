@@ -35,6 +35,11 @@ form.formset .control-label {
     text-align: left;
 }
 
+/* Prevent the select options from being temporarily visible before select2 initializes. */
+.with-select2 option {
+    visibility: hidden;
+}
+
 /* Widths for various form tables. */
 .tag-table-container {
     width: 300px;

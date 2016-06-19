@@ -1,7 +1,5 @@
 $(function() {
-  $('.with-select2 select').select2({
-    tokenSeparators: [',']
-  });
+  $('.with-select2 select').select2();
 
   $('.dateinput').datepicker({
     format: 'mm/dd/yyyy',
