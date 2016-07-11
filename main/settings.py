@@ -27,7 +27,7 @@ LOGGING = {
   'handlers': {
     'console': {
       'class': 'logging.StreamHandler',
-      'level': 'INFO',
+      'level': 'DEBUG',
       'formatter': 'default'
     },
     'file': {
@@ -58,7 +58,7 @@ LOGGING = {
     },
     'django.db.backends': {
       'handlers': ['file', 'console'],
-      'level': 'INFO',  # Set to DEBUG to see live SQL queries.
+      'level': 'DEBUG',  # Set to DEBUG to see live SQL queries.
       'propagate': False,
     },
   }

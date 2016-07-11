@@ -3,6 +3,12 @@
 
 {% block content %}
   <h2>{{ event.camp.name }}: Admin for {{ event.name }}</h2>
+  <h5>
+    <ul>
+      <li>{{ event.task_types.count }} task types ({{ event.total_assigned_score }}/{{ event.total_score }} total points assigned)</li>
+      <li>{{ event.num_participants }} Participants ({{ event.score_per_participant }} points each)</li>
+    </ul>
+  </h5>
   <h3>Event</h3>
   <h4><a href="{% url 'dicpick:event_update' event.camp.slug event.slug %}">Edit Event Details</a></h4>
   <h4><a href="{% url 'dicpick:tags_update' event.camp.slug event.slug %}">Edit Tags</a></h4>

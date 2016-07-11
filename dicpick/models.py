@@ -9,6 +9,8 @@ from datetime import timedelta
 from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
 from django.db import models
+from django.db.models import Sum, F
+from django.utils.functional import cached_property
 
 
 class Camp(models.Model):
@@ -48,6 +50,9 @@ class ModelWithDateRange(models.Model):
       yield date
       date += timedelta(days=1)
 
+  def is_in_date_range(self, dt):
+    return self.start_date <= dt <= self.end_date
+
 
 class Event(ModelWithDateRange):
   """A 'universe' of tasks for some camp, e.g., Mystopia at Burning Man 2016."""
@@ -62,6 +67,22 @@ class Event(ModelWithDateRange):
 
   # Short name for use as a slug in URLs.
   slug = models.SlugField(max_length=10, db_index=True, help_text='A short string to use in URLs.  E.g., "2016".')
+
+  @cached_property
+  def total_score(self):
+    return Task.objects.filter(task_type__event=self).aggregate(total_score=Sum(F('num_people')*F('score')))['total_score']
+
+  @cached_property
+  def total_assigned_score(self):
+    return Task.assignees.through.objects.filter(task__task_type__event=self).aggregate(total_assigned_score=Sum('task__score'))['total_assigned_score']
+
+  @cached_property
+  def num_participants(self):
+    return self.participants.count()
+
+  @cached_property
+  def score_per_participant(self):
+    return int(self.total_score / self.num_participants + 0.5)
 
   def header(self):
     return '{}: {}'.format(self.camp.name, self.name)
@@ -91,7 +112,7 @@ class Participant(ModelWithDateRange):
     unique_together = [('event', 'user')]
 
   # The event.
-  event = models.ForeignKey(Event)
+  event = models.ForeignKey(Event, related_name='participants')
 
   # The underlying user.
   user = models.ForeignKey(User)
@@ -102,6 +123,9 @@ class Participant(ModelWithDateRange):
   # Initial score that this participant has already earned through out-of-band contributions.
   # Assumed to be zero if unspecified.
   initial_score = models.IntegerField(blank=True, default=0)
+
+  def __str__(self):
+    return self.user.get_full_name()
 
 
 class TaskType(ModelWithDateRange):

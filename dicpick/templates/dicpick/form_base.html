@@ -7,6 +7,8 @@
   <legend>{% block legend %}{{ legend }}{% endblock legend %}</legend>
   {% if help_text %}<div class="form-help-text">{{ help_text|lightweight_formatting }}</div><br>{% endif %}
 
+  {% block extra_top %}{% endblock extra_top %}
+
   <form {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} method="post"
         class="form-horizontal with-select2 {% block form_class %}{% endblock form_class %}">
     {% csrf_token %}

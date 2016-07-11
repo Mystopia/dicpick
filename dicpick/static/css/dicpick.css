@@ -97,6 +97,21 @@ form.formset .control-label {
     vertical-align: middle;
 }
 
+.table > tbody > tr > td.table-row-designator {
+    vertical-align: middle;
+    font-weight: bold;
+}
+
+.assignee-option.disqualified-for-date::after {
+    font-family: 'Glyphicons Halflings';
+    content: "   \e109";
+}
+
+.assignee-option.disqualified-for-tags::after {
+    font-family: 'Glyphicons Halflings';
+    content: "   \e041";
+}
+
 a.faq-anchor {
     /* Compensate for the fixed header. */
     display: block;

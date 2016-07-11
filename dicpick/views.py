@@ -12,20 +12,25 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.db import transaction
+from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
+from django.http import JsonResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, render
-from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView
+from django.utils.functional import cached_property
+from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
-from dicpick.forms import (EventForm, InlineFormsetWithTagChoices, ModelFormsetWithTagChoices,
+from dicpick.assign import assign
+from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
-                           TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm)
-from dicpick.models import Camp, Event, Participant, Task, TaskType
+                           TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
+                           InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices)
+from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag
 from dicpick.util import create_user
 
 
 class CampRelatedMixin(object):
   """Mixin for views relating to data on or under a certain camp."""
-  @property
+  @cached_property
   def camp(self):
     return get_object_or_404(Camp, slug=self.kwargs['camp_slug'])
 
@@ -58,16 +63,10 @@ class CampDetail(IsCampAdminMixin, DetailView):
 
 class EventRelatedMixin(IsCampAdminMixin):
   """Mixin for views relating to data on or under a single event."""
-  def __init__(self, *args, **kwargs):
-    super(EventRelatedMixin, self).__init__(*args, **kwargs)
-    self._event = None
-
-  @property
+  @cached_property
   def event(self):
-    if self._event is None:
-      self._event = get_object_or_404(Event.objects.prefetch_related('tags'),
-                                      camp__slug=self.kwargs['camp_slug'], slug=self.kwargs['event_slug'])
-    return self._event
+    return get_object_or_404(Event.objects.prefetch_related('tags'),
+                             camp__slug=self.kwargs['camp_slug'], slug=self.kwargs['event_slug'])
 
 
 class EventRelatedTemplateMixin(EventRelatedMixin):
@@ -122,7 +121,6 @@ class EventFormMixin(EventMixin, EventRelatedSingleFormMixin):
 
 
 class EventCreate(EventFormMixin, CreateView):
-  @property
   def event(self):
     return self.object
 
@@ -201,7 +199,6 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
           # This is a user we just added, so add them to the camp's group.
           user = form.cleaned_data['user']
           user.groups.add(self.camp.member_group)
-
       return super(ParticipantsUpdate, self).form_valid(formset)
 
 
@@ -265,16 +262,42 @@ class TaskTypesUpdate(EventRelatedFormsetUpdate):
     return kwargs
 
 
+class AssignButtonMixin(object):
+  # Subclasses can override one or both to restrict the tasks that will be assigned.
+  task_type = None
+  date = None
+
+  def get_context_data(self, **kwargs):
+    data = super(AssignButtonMixin, self).get_context_data(**kwargs)
+    data['show_assign_button'] = True
+    data['task_type'] = self.task_type
+    data['date'] = self.date
+    return data
+
+
 class TasksByType(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_type.html'
 
 
-class TasksByTypeUpdate(EventRelatedFormsetMixin, FormView):
-  @property
+class TasksByDate(EventRelatedTemplateMixin, TemplateView):
+  template_name = 'dicpick/tasks_by_date.html'
+
+
+class InlineTaskFormsetUpdate(AssignButtonMixin, EventRelatedFormsetMixin, FormView):
+  def form_valid(self, form):
+    if form.is_valid():
+      form.save()
+    return super(InlineTaskFormsetUpdate, self).form_valid(form)
+
+  def get_success_url(self):
+    return self.request.path   # Return to the same formset for further editing.
+
+
+class TasksByTypeUpdate(InlineTaskFormsetUpdate):
   def legend(self):
     return 'Tweak data for {} tasks'.format(self.task_type.name)
 
-  @property
+  @cached_property
   def task_type(self):
     # Note that we filter by camp and event even though the pk is enough for uniqueness, to ensure that
     # the current user is allowed to access the task type.
@@ -285,7 +308,7 @@ class TasksByTypeUpdate(EventRelatedFormsetMixin, FormView):
 
   def get_form_class(self):
     return inlineformset_factory(TaskType, Task, form=TaskByTypeForm, extra=0, can_delete=False,
-                                 formset=InlineFormsetWithTagChoices)
+                                 formset=InlineFormsetWithTagAndParticipantChoices)
 
   def get_form_kwargs(self):
     kwargs = super(TasksByTypeUpdate, self).get_form_kwargs()
@@ -294,23 +317,14 @@ class TasksByTypeUpdate(EventRelatedFormsetMixin, FormView):
     kwargs['queryset'] = (
       Task.objects
         .filter(task_type=self.task_type)
-        .prefetch_related('tags')
+        .select_related('task_type')
+        .prefetch_related('tags', 'assignees', 'assignees__user')
         .order_by('date')
     )
     return kwargs
 
-  def form_valid(self, form):
-    if form.is_valid():
-      form.save()
-    return super(TasksByTypeUpdate, self).form_valid(form)
 
-
-class TasksByDate(EventRelatedTemplateMixin, TemplateView):
-  template_name = 'dicpick/tasks_by_date.html'
-
-
-class TasksByDateUpdate(EventRelatedFormsetMixin, FormView):
-  @property
+class TasksByDateUpdate(InlineTaskFormsetUpdate):
   def legend(self):
     return 'Tweak data for tasks on {}'.format(self.date)
 
@@ -320,7 +334,7 @@ class TasksByDateUpdate(EventRelatedFormsetMixin, FormView):
 
   def get_form_class(self):
     return modelformset_factory(Task, TaskByDateForm, extra=0, can_delete=False,
-                                formset=ModelFormsetWithTagChoices)
+                                formset=ModelFormsetWithTagAndParticipantChoices)
 
   def get_form_kwargs(self):
     kwargs = super(TasksByDateUpdate, self).get_form_kwargs()
@@ -328,13 +342,63 @@ class TasksByDateUpdate(EventRelatedFormsetMixin, FormView):
       Task.objects
         .filter(task_type__event=self.event, date=self.date)
         .select_related('task_type')
-        .prefetch_related('tags')
+        .prefetch_related('tags', 'assignees', 'assignees__user')
         .order_by('task_type__name')
     )
     kwargs['event'] = self.event
     return kwargs
 
-  def form_valid(self, form):
-    if form.is_valid():
-      form.save()
-    return super(TasksByDateUpdate, self).form_valid(form)
+
+class AssignTasks(EventRelatedMixin, View):
+  def post(self, request, camp_slug, event_slug):
+    task_type_str = request.POST.get('task_type')
+    date_str = request.POST.get('date')
+    task_type_id = int(task_type_str) if task_type_str else None
+    dt = datetime.datetime.strptime(date_str, '%Y_%m_%d') if date_str else None
+
+    assign(self.event, task_type_id, dt)
+
+    redirect = request.POST.get('redirect')
+    return HttpResponseRedirect(redirect)
+
+
+class ParticipantAutocomplete(EventRelatedMixin, View):
+  def get(self, request, camp_slug, event_slug):
+    query = request.GET.get('q') or ''
+
+    for_date_str = request.GET.get('d')
+    for_date = datetime.datetime.strptime(for_date_str, "%Y-%m-%d").date() if for_date_str else None
+
+    for_tags_str = request.GET.get('t')
+    for_tags_strs = for_tags_str.split('|') if for_tags_str else []
+    for_tags = set(Tag.objects.filter(event=self.event, name__in=for_tags_strs))
+
+    filters = [Q(**{'user__{}__istartswith'.format(f): query}) for f in ['username', 'first_name', 'last_name', 'email']]
+    combined_filter = Q(event=self.event) & reduce(lambda x, y: x | y, filters)
+    qs = (
+      Participant.objects.filter(combined_filter)
+        .select_related('user')
+        .prefetch_related('tags')
+        .order_by('user__first_name', 'user__last_name')
+    )[:5]
+
+    def fmt_date(dt):
+      return dt.strftime('%b %d')
+
+    results = []
+    for p in qs:
+      result = {'id': p.id, 'text': '{} {}'.format(p.user.first_name, p.user.last_name)}
+      if for_date < p.start_date or for_date > p.end_date:
+        result['disabled'] = True
+        result['disqualified_for_date'] = True
+        result['tooltip'] = 'Available {}-{}.'.format(fmt_date(p.start_date), fmt_date(p.end_date))
+      if for_tags and not for_tags.intersection(p.tags.all()):
+        result['disabled'] = True
+        result['disqualified_for_tags'] = True
+        result['tooltip'] = result.get('tooltip', '') + " No matching tags."
+      results.append(result)
+
+    ret = {
+      'results': results,
+    }
+    return JsonResponse(ret, safe=False)

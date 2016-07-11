@@ -3,4 +3,16 @@
 
 {% block heading %}{{ event.header }}{% endblock heading %}
 
+{% block extra_top %}
+  {% if show_assign_button %}
+    <form action="{% url 'dicpick:assign_tasks' event.camp.slug event.slug %}" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="task_type" value="{{ task_type.id }}">
+      <input type="hidden" name="date" value="{{ date|date:'Y_m_d' }}">
+      <input type="hidden" name="redirect" value="{{ request.path }}">
+      <input type="submit" value="Assign" class="btn btn-primary">
+    </form>
+  {% endif %}
+{% endblock extra_top %}
+
 {% block cancel_url %}{{ event.get_absolute_url }}{% endblock cancel_url %}

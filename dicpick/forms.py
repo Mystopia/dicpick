@@ -8,10 +8,9 @@ import re
 
 import requests
 from django.contrib.auth.models import User
-from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, DateInput, FileField, Form, HiddenInput,
+from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
                           ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError)
 from django.forms.utils import pretty_name
-from django.shortcuts import get_object_or_404
 
 from dicpick.models import Event, Participant, Tag, Task, TaskType
 from dicpick.util import create_user
@@ -85,32 +84,43 @@ class TaskTypeForm(FormWithTags):
       'tags': 'Only people with at least one of these tags can be assigned tasks of this type'
     }
 
-
-class TaskByTypeForm(FormWithTags):
+class TaskFormBase(FormWithTags):
   class Meta:
     model = Task
-    fields = ['date', 'num_people', 'score', 'tags']
-    qualifier = 'task'
-    widgets = {
-      'date': DateInput(attrs={'disabled': True})
-    }
-    help_texts = {
-      'num_people': 'Number of people needed to perform this task on this day',
-      'score': 'Score each person performing this task on this day earns for doing so',
-      'tags': 'Only people with at least one of these tags can be assigned this task on this day'
-    }
-
-
-class TaskByDateForm(FormWithTags):
-  class Meta:
-    model = Task
-    fields = ['num_people', 'score', 'tags']
+    # Subclasses must copy the fields list, because it gets modified by the framework.
+    fields = ['num_people', 'assignees', 'score', 'tags']
     qualifier = 'task'
     help_texts = {
       'num_people': 'Number of people needed to perform this task on this day',
       'score': 'Score each person performing this task on this day earns for doing so',
       'tags': 'Only people with at least one of these tags can be assigned this task on this day'
     }
+    designator_field = None
+
+  def __init__(self, *args, **kwargs):
+    participants_by_id = kwargs.pop('participants_by_id')
+    super(TaskFormBase, self).__init__(*args, **kwargs)
+    assignees_field = self.fields['assignees']
+    # Create <option> tags for the currently selected values in this form, so that the initial data displays
+    # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
+    # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
+    # TODO: Restrict to just the assignees that match on dates and tags.
+    assignees_field.choices = [(assignees_field.prepare_value(participants_by_id[x]),
+                                assignees_field.label_from_instance(participants_by_id[x]))
+                               for x in self.initial['assignees']]
+    assignees_field.widget.attrs['dp-for-date'] = self.instance.date
+    assignees_field.widget.attrs['dp-for-tags'] = '|'.join([t.name for t in self.instance.tags.all()])
+
+
+class TaskByTypeForm(TaskFormBase):
+  class Meta(TaskFormBase.Meta):
+    fields = list(TaskFormBase.Meta.fields)
+    designator_field = 'date'
+
+
+class TaskByDateForm(TaskFormBase):
+  class Meta(TaskFormBase.Meta):
+    fields = list(TaskFormBase.Meta.fields)
     designator_field = 'task_type'
 
 
@@ -132,6 +142,7 @@ class UserField(MultiValueField):
   user_re = re.compile(r'^\s*(?P<first_name>[A-Za-z\- ]+)\s+(?P<last_name>[A-Za-z\-]+)\s+\(\s*(?P<email>\S+)\s*\)\s*$')
 
   def __init__(self, *args, **kwargs):
+    self.users_by_id = None  # Will be set when the form is created.
     super(UserField, self).__init__((CharField(required=False), CharField()),
                                     *args,
                                     widget=UserWidget(),
@@ -156,10 +167,10 @@ class UserField(MultiValueField):
         # will require a non-empty user_id in the user field (as it's not nullable in the Participant model).
         user = create_user(email, first_name, last_name)
     else:
-      # Update the fields if needed.
-      # TODO: A more elegant way to only save if there are changes.
-      user = get_object_or_404(User, pk=user_id)
+      user = self.users_by_id[int(user_id)]
 
+    # Update the fields if needed.
+    # TODO: A more elegant way to only save if there are changes.
     save = False
     if user.email != email:
       user.email = email
@@ -172,7 +183,6 @@ class UserField(MultiValueField):
       save = True
     if save:
       user.save()
-
     return user
 
 
@@ -198,8 +208,12 @@ class ParticipantForm(FormWithTags):
     # See ParticipantInlineFormset below for details.
     users_by_id = kwargs.pop('users_by_id')
     super(ParticipantForm, self).__init__(*args, **kwargs)
+    self.fields['user'].users_by_id = users_by_id
     self.fields['user'].widget.users_by_id = users_by_id
 
+  def _get_validation_exclusions(self):
+    # Don't validate the user field, because it will cause at least one db query per form in the formset.
+    return super(ParticipantForm, self)._get_validation_exclusions() + ['user']
 
 class ParticipantImportForm(Form):
   file = FileField(label='Upload file', required=False)
@@ -244,15 +258,35 @@ class TagChoicesFormsetMixin(object):
 class InlineFormsetWithTagChoices(TagChoicesFormsetMixin, BaseInlineFormSet):
   """InlineFormset base with a hack to pass the set of tag choices into each form.
 
-  Otherwise the standard django code will re-evaluate the queryset (and hit the database) once per form.
+  Otherwise django will re-evaluate the queryset (and hit the database) for every form in the formset.
   """
   pass
 
 
-class ModelFormsetWithTagChoices(TagChoicesFormsetMixin, BaseModelFormSet):
-  """Formset base with a hack to pass the set of tag choices into each form.
+class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
+  def __init__(self, *args, **kwargs):
+    event = kwargs.get('event')  # Superclass needs this kwarg, and will pop it off before passing the kwargs up.
+    super(ParticipantAndTagChoicesFormsetMixin, self).__init__(*args, **kwargs)
+    self._participant_choices = Participant.objects.filter(event=event).select_related('user')
 
-  Otherwise the standard django code will re-evaluate the queryset (and hit the database) once per form.
+  def get_form_kwargs(self, index):
+    kwargs = super(ParticipantAndTagChoicesFormsetMixin, self).get_form_kwargs(index)
+    kwargs['participants_by_id'] = {p.id: p for p in self._participant_choices}
+    return kwargs
+
+
+class InlineFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMixin, BaseInlineFormSet):
+  """InlineFormset base with hacks to pass the sets of tag and participant choices into each form.
+
+  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
+  """
+  pass
+
+
+class ModelFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMixin, BaseModelFormSet):
+  """Formset base with hacks to pass the sets of tag and participant choices into each form.
+
+  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
   """
   pass
 
@@ -263,10 +297,21 @@ class ParticipantInlineFormset(InlineFormsetWithTagChoices):
     # Hack to pass in the id -> user mapping to the custom widget, so that its decompress method doesn't
     # have to hit the database once per form in the formset.
     self._users_by_id = {}
+    self._participants_by_id = {}
     for form in self.forms:
       participant = form.instance
-      if participant and participant.user_id:
-        self._users_by_id[participant.user.id] = participant.user
+      if participant and participant.id and participant.user_id:
+        self._participants_by_id[participant.id] = participant
+        self._users_by_id[participant.user_id] = participant.user
+
+  def add_fields(self, form, index):
+    super(ParticipantInlineFormset, self).add_fields(form, index)
+    def participant_id_to_python(pk):
+      try:
+        return self._participants_by_id[int(pk)]
+      except KeyError:
+        raise ValidationError('Invalid choice')
+    form.fields['id'].to_python = participant_id_to_python
 
   def get_form_kwargs(self, index):
     kwargs = super(ParticipantInlineFormset, self).get_form_kwargs(index)

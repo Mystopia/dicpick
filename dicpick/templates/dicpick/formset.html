@@ -41,7 +41,7 @@
 
         <tr>
           <td class="table-row-counter">{{ forloop.counter }}</td>
-          {% if inline_form.has_designator %}<td>{{ inline_form.designator }}</td>{% endif %}
+          {% if inline_form.has_designator %}<td class="table-row-designator">{{ inline_form.designator }}</td>{% endif %}
           {% for field in inline_form %}
             {% if field.is_hidden %}
               {{ field }}

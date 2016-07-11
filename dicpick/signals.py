@@ -4,7 +4,7 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, m2m_changed
 from django.dispatch import receiver
 
 from dicpick.models import Task, TaskType
@@ -21,4 +21,15 @@ def create_task_instances(sender, instance, **kwargs):
   for missing_date in missing_dates:
     task = Task(task_type=task_type, date=missing_date, num_people=task_type.num_people, score=task_type.score)
     task.save()
-    task.tags.add(*task_type.tags.all())
+
+
+@receiver(m2m_changed, sender=TaskType.tags.through)
+def tags_updated(sender, instance, action, **kwargs):
+  task_type = instance
+  pk_set = kwargs.pop('pk_set')
+  if action == 'post_add':
+    for task in task_type.tasks.all():
+      task.tags.add(*pk_set)
+  elif action == 'post_remove':
+    for task in task_type.tasks.all():
+      task.tags.remove(*pk_set)
