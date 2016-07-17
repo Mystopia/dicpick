@@ -4,8 +4,10 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
+import random
 from collections import defaultdict
 
+import datetime
 from django.db.models import Count, F
 
 from dicpick.models import Task
@@ -18,15 +20,23 @@ class NoEligibleParticipant(Exception):
     self.task = task
 
 
-def is_eligible(task, participant):
+def _is_eligible(task, participant):
   task_tags = set(task.tags.all())
   return (participant.is_in_date_range(task.date) and
-          (len(task_tags) == 0 or task_tags.intersection(participant.tags.all()) > 0) and
+          (not task_tags or task_tags.intersection(participant.tags.all())) and
           participant not in task.assignees.all())
 
 
-def assign(event, task_type_id, dt):
-  task_filter = {'task_type__event': event}
+def assign_from_request(event, request):
+  task_type_str = request.POST.get('task_type')
+  date_str = request.POST.get('date')
+  task_type_id = int(task_type_str) if task_type_str else None
+  dt = datetime.datetime.strptime(date_str, '%Y_%m_%d') if date_str else None
+  return assign_for_task_type_and_date(event, task_type_id, dt)
+
+
+def assign_for_task_type_and_date(event, task_type_id, dt):
+  task_filter = {}
   if task_type_id is not None:
     # Note that the event filter is important even if we have a task_type_id,
     # to verify that the task_type does actually belong to the event.
@@ -34,10 +44,18 @@ def assign(event, task_type_id, dt):
   if dt is not None:
     task_filter['date'] = dt
 
+  assign_for_filter(event, **task_filter)
+
+
+def assign_for_task_ids(event, task_ids):
+  assign_for_filter(event, id__in=task_ids)
+
+
+def assign_for_filter(event, **task_filter):
   tasks = list(
       Task.objects
         .annotate(assignee_count=Count('assignees'))
-        .filter(assignee_count__lt=F('num_people'), **task_filter)
+        .filter(assignee_count__lt=F('num_people'), task_type__event=event, **task_filter)
         .select_related('task_type')
         .prefetch_related('tags', 'assignees')
         .order_by()  # Clear the default ordering to avoid superfluous grouping.
@@ -45,30 +63,16 @@ def assign(event, task_type_id, dt):
   participants = list(
       event.participants
         .select_related('user')
-        .prefetch_related('tags')
+        .prefetch_related('tags', 'tasks')
         .all()
   )
 
   # All task_types we're dealing with.
   task_types = set()
 
-  # Participant -> score achieved by that participant so far.
-  # Allows us to sort participants from lowest to highest score.
-  participant_scores = {}
-
-  # particpants -> task_type -> count of tasks of this type assigned to this participant.
-  # Allows us to prefer diversity of task types for each participant.
-  #participant_task_type_counts = defaultdict(lambda: defaultdict(int))
-
-  for participant in participants:
-    participant_scores[participant] = participant.initial_score
   for task in tasks:
     task_types.add(task.task_type)
-    for assignee in task.assignees.all():
-      participant_scores[assignee] += task.score
-      #participant_task_type_counts[assignee][task.task_type] += 1
 
-  participants = sorted(participants, key=lambda p: participant_scores[p])
   participants_by_id = dict((p.id, p) for p in participants)
 
   participant_task_type_counts = (
@@ -92,20 +96,23 @@ def assign(event, task_type_id, dt):
     task_type_id = x['tasks__task_type']
     participant_id = x['id']
     count = x['count']
-    task_type_count_participants[task_type_id][0].remove(participants_by_id[participant_id])
+    task_type_count_participants[task_type_id][0].discard(participants_by_id[participant_id])
     task_type_count_participants[task_type_id][count].add(participants_by_id[participant_id])
 
   for task in tasks:
     for i in range(len(task.assignees.all()), task.num_people):
       # First try candidates with 0 tasks of this type, then 1, etc.  This ensures the best spread of task diversity.
       count_participant_pairs = sorted(task_type_count_participants[task.task_type_id].items())
-      for count, participants in count_participant_pairs:
-        assign_to = next((p for p in participants if is_eligible(task, p)), None)
-        if assign_to is not None:
+      for count, candidates in count_participant_pairs:
+        eligible = [p for p in candidates if _is_eligible(task, p)]
+        if eligible:  # Pick some random candidate from among those with the lowest score.
+          lowest_score = min(p.assigned_score for p in eligible)
+          assign_to = random.choice([p for p in eligible if p.assigned_score == lowest_score])
           break
       else:
         raise NoEligibleParticipant(task)
 
       task_type_count_participants[task.task_type.id][count].remove(assign_to)
       task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-      task.assignees.add(assign_to)
+      task.assignees.add(assign_to)  # Will autosave to the db.  TODO: Batch these?
+      assign_to.assigned_score += task.score

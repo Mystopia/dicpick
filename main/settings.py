@@ -97,6 +97,7 @@ INSTALLED_APPS = (
 MIDDLEWARE_CLASSES = (
   #'debug_toolbar.middleware.DebugToolbarMiddleware',
   'django.contrib.sessions.middleware.SessionMiddleware',
+  'django.middleware.locale.LocaleMiddleware',
   'django.middleware.common.CommonMiddleware',
   'django.middleware.csrf.CsrfViewMiddleware',
   'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -120,11 +121,17 @@ ROOT_URLCONF = 'main.urls'
 WSGI_APPLICATION = 'main.wsgi.application'
 
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'de'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = False
 USE_TZ = True
+
+
+LANGUAGES = [
+  ('en', 'English'),
+  ('en-mystopia', 'Mystopia'),
+]
 
 
 STATIC_URL = '/static/'

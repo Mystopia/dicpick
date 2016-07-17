@@ -1,0 +1,7 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/event_related_formset.html' %}
+
+{% block form_content %}
+  <input type="submit" name="assign" value="Assign" class="btn btn-primary">
+  {{ block.super }}
+{% endblock form_content %}

@@ -1,0 +1,24 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/event_related_detail.html' %}
+{% load i18n %}
+
+{% block content %}
+  <legend>{% trans 'Participant' %} Scores</legend>
+  <div class="table-container participant-scores-table-container">
+    <table class="table table-striped table-condensed table-hover">
+      <thead>
+      <tr>
+        <th>Points</th>
+        <th>{% trans 'Participant' %}</th>
+      </tr>
+      </thead>
+      {% for participant in event.participants_sorted_by_score %}
+        <tr>
+          <td>{{ participant.assigned_score }}</td>
+          <td>{{ participant }}</td>
+        </tr>
+      {% endfor %}
+    </table>
+  </div>
+{% endblock content %}
+

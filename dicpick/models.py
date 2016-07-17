@@ -68,24 +68,30 @@ class Event(ModelWithDateRange):
   # Short name for use as a slug in URLs.
   slug = models.SlugField(max_length=10, db_index=True, help_text='A short string to use in URLs.  E.g., "2016".')
 
+  def participants_sorted_by_score(self):
+    return sorted(self.participants.all(), key=lambda p: p.assigned_score, reverse=True)
+
   @cached_property
   def total_score(self):
-    return Task.objects.filter(task_type__event=self).aggregate(total_score=Sum(F('num_people')*F('score')))['total_score']
+    return Task.objects.filter(task_type__event=self).aggregate(
+        total_score=Sum(F('num_people')*F('score')))['total_score']
 
   @cached_property
   def total_assigned_score(self):
-    return Task.assignees.through.objects.filter(task__task_type__event=self).aggregate(total_assigned_score=Sum('task__score'))['total_assigned_score']
+    return Task.assignees.through.objects.filter(task__task_type__event=self).aggregate(
+        total_assigned_score=Sum('task__score'))['total_assigned_score']
 
   @cached_property
   def num_participants(self):
     return self.participants.count()
 
   @cached_property
+  def num_tasks(self):
+    return Task.objects.filter(task_type__event=self).count()
+
+  @cached_property
   def score_per_participant(self):
     return int(self.total_score / self.num_participants + 0.5)
-
-  def header(self):
-    return '{}: {}'.format(self.camp.name, self.name)
 
   def get_absolute_url(self):
     return reverse('dicpick:event_detail', kwargs={'camp_slug': self.camp.slug, 'event_slug': self.slug })
@@ -123,6 +129,10 @@ class Participant(ModelWithDateRange):
   # Initial score that this participant has already earned through out-of-band contributions.
   # Assumed to be zero if unspecified.
   initial_score = models.IntegerField(blank=True, default=0)
+
+  @cached_property
+  def assigned_score(self):
+    return self.initial_score + sum(t.score for t in self.tasks.all())
 
   def __str__(self):
     return self.user.get_full_name()
@@ -179,3 +189,6 @@ class Task(models.Model):
 
   # The participants assigned to this task.
   assignees = models.ManyToManyField(Participant, related_name='tasks', blank=True)
+
+  def __str__(self):
+    return '{} on {}'.format(self.task_type.name, self.date)

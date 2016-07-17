@@ -43,7 +43,7 @@ $(function() {
 
   // Initialize date fields.
 
-  $('.dateinput').datepicker({
+  $('.widget-dateinput').datepicker({
     format: 'mm/dd/yyyy',
     assumeNearbyYear: true,
     autoclose: true

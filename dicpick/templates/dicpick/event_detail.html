@@ -1,23 +1,34 @@
 {# Copyright 2016 Mystopia. #}
-{% extends 'dicpick/base.html' %}
+{% extends 'dicpick/event_related_detail.html' %}
+{% load i18n %}
 
 {% block content %}
-  <h2>{{ event.camp.name }}: Admin for {{ event.name }}</h2>
-  <h5>
-    <ul>
-      <li>{{ event.task_types.count }} task types ({{ event.total_assigned_score }}/{{ event.total_score }} total points assigned)</li>
-      <li>{{ event.num_participants }} Participants ({{ event.score_per_participant }} points each)</li>
-    </ul>
-  </h5>
-  <h3>Event</h3>
-  <h4><a href="{% url 'dicpick:event_update' event.camp.slug event.slug %}">Edit Event Details</a></h4>
-  <h4><a href="{% url 'dicpick:tags_update' event.camp.slug event.slug %}">Edit Tags</a></h4>
-  <h4><a href="{% url 'dicpick:event_delete' event.camp.slug event.slug %}">Delete Event</a></h4>
-  <h3>Participants</h3>
-  <h4><a href="{% url 'dicpick:participants_import' event.camp.slug event.slug %}">Import Participants</a></h4>
-  <h4><a href="{% url 'dicpick:participants_update' event.camp.slug event.slug %}">Edit Participants</a></h4>
-  <h3>Tasks</h3>
-  <h4><a href="{% url 'dicpick:task_types_update' event.camp.slug event.slug %}">Edit Task Types</a></h4>
-  <h4><a href="{% url 'dicpick:tasks_by_type' event.camp.slug event.slug %}">Tweak Tasks By Type</a></h4>
-  <h4><a href="{% url 'dicpick:tasks_by_date' event.camp.slug event.slug %}">Tweak Tasks By Date</a></h4>
+  <table>
+    <tr>
+      <td class="event-menu-container">
+        <h3>Event</h3>
+        <h4><a href="{% url 'dicpick:event_update' event.camp.slug event.slug %}">Edit Event Details</a></h4>
+        <h4><a href="{% url 'dicpick:tags_update' event.camp.slug event.slug %}">Edit Tags</a></h4>
+        <h4><a href="{% url 'dicpick:event_delete' event.camp.slug event.slug %}">Delete Event</a></h4>
+        <h3>{%  trans 'Participants' %}</h3>
+        <h4><a href="{% url 'dicpick:participants_import' event.camp.slug event.slug %}">Import {%  trans 'Participants' %}</a></h4>
+        <h4><a href="{% url 'dicpick:participants_update' event.camp.slug event.slug %}">Edit {%  trans 'Participants' %}</a></h4>
+        <h4><a href="{% url 'dicpick:participants_scores' event.camp.slug event.slug %}">{%  trans 'Participant' %} Scores</a></h4>
+        <h3>{% trans 'Tasks' %}</h3>
+        <h4><a href="{% url 'dicpick:task_types_update' event.camp.slug event.slug %}">Edit {% trans 'Task' %} Types</a></h4>
+        <h4><a href="{% url 'dicpick:tasks_by_type' event.camp.slug event.slug %}">Assign {% trans 'Tasks' %} By Type</a></h4>
+        <h4><a href="{% url 'dicpick:tasks_by_date' event.camp.slug event.slug %}">Assign {% trans 'Tasks' %} By Date</a></h4>
+      </td>
+      <td class="event-stats-summary-container">
+        <table class="table event-stats-summary">
+          <tr><td>{% trans 'Tasks' %}</td><td>{{ event.num_tasks }}</td></tr>
+          <tr><td>{% trans 'Task' %} types</td><td>{{ event.task_types.count }}</td></tr>
+          <tr><td>Total points</td><td>{{ event.total_score }}</td></tr>
+          <tr><td>Assigned points</td><td>{{ event.total_assigned_score }}</td></tr>
+          <tr><td>{% trans 'Participants' %}</td><td>{{ event.num_participants }}</td></tr>
+          <tr><td>Points/{% trans 'Participant' %}</td><td>{{ event.score_per_participant }}</td></tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 {% endblock content %}

@@ -43,8 +43,9 @@
 {% endblock navbar %}
 
 <div class="container">
-{% block content %}
-{% endblock content %}
+  <h3 class="heading">{% block heading %}{% endblock heading %}</h3>
+  {% block content %}
+  {% endblock content %}
 </div>
 
 <br><br>

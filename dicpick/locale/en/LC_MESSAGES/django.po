@@ -1,0 +1,50 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-07-17 22:41+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: templates/dicpick/event_detail.html:13
+#: templates/dicpick/event_detail.html:14
+#: templates/dicpick/event_detail.html:15
+#: templates/dicpick/event_detail.html:28 views.py:197 views.py:249
+msgid "Participants"
+msgstr ""
+
+#: templates/dicpick/event_detail.html:16
+#: templates/dicpick/event_detail.html:29
+#: templates/dicpick/participant_scores.html:6
+#: templates/dicpick/participant_scores.html:12
+msgid "Participant"
+msgstr ""
+
+#: templates/dicpick/event_detail.html:17
+#: templates/dicpick/event_detail.html:19
+#: templates/dicpick/event_detail.html:20
+#: templates/dicpick/event_detail.html:24
+#: templates/dicpick/tasks_by_date.html:7
+#: templates/dicpick/tasks_by_type.html:6
+msgid "Tasks"
+msgstr ""
+
+#: templates/dicpick/event_detail.html:18
+#: templates/dicpick/event_detail.html:25 views.py:289
+msgid "Task"
+msgstr ""
+
+#: views.py:203
+msgid "person"
+msgstr ""

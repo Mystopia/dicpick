@@ -23,6 +23,7 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tags/$', views.TagsUpdate.as_view(), name='tags_update'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/$', views.ParticipantsUpdate.as_view(), name='participants_update'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/import/$', views.ParticipantsImport.as_view(), name='participants_import'),
+  url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/scores/$', views.ParticipantScores.as_view(), name='participants_scores'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/autocomplete/$', views.ParticipantAutocomplete.as_view(), name='participant_autocomplete'),
 
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/task_types/$', views.TaskTypesUpdate.as_view(), name='task_types_update'),
@@ -30,8 +31,6 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_type/(?P<task_type_pk>\d+)$', views.TasksByTypeUpdate.as_view(), name='tasks_by_type_update'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/$', views.TasksByDate.as_view(), name='tasks_by_date'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/(?P<date>\w+)$', views.TasksByDateUpdate.as_view(), name='tasks_by_date_update'),
-
-  url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/assign/', views.AssignTasks.as_view(), name='assign_tasks'),
 ]
 
 

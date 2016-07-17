@@ -53,8 +53,21 @@ form.formset .control-label {
     width: 300px;
 }
 
+.participant-scores-table-container {
+    width: 250px;
+}
+
 .participant-table-container {
     width: 850px;
+}
+
+.event-menu-container {
+    width: 300px;
+}
+.event-stats-summary-container {
+    width: 200px;
+    vertical-align: top;
+    padding-top: 20px;
 }
 
 /* Default widget widths. */

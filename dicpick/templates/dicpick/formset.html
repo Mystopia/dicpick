@@ -5,9 +5,7 @@
 {% block form_class %}formset{% endblock form_class %}
 
 {% block form_content %}
-  <div>
-    {{ form.management_form }}
-  </div>
+  {% block management_form %}<div>{{ form.management_form }}</div>{% endblock management_form %}
 
   <div class="table-container {{ form.forms.0.Meta.qualifier }}-table-container">
     <table class="table table-striped table-condensed table-hover">

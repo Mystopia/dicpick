@@ -73,14 +73,15 @@ class TaskTypeForm(FormWithTags):
     fields = ['name', 'start_date', 'end_date', 'num_people', 'score', 'tags']
     qualifier = 'tasktype'
     labels = {
-      'num_people': '# people'
+      'num_people': '# people',
+      'score': 'Points'
     }
     help_texts = {
       'name': 'E.g., Dinner Sous Chef',
       'start_date': 'First day on which tasks of this type must be performed',
       'end_date': 'Last day on which tasks of this type must be performed',
       'num_people': 'Number of people needed to perform tasks of this type each day',
-      'score': 'Score each person performing this task earns for doing so',
+      'score': 'Points each person performing this task earns for doing so',
       'tags': 'Only people with at least one of these tags can be assigned tasks of this type'
     }
 
@@ -90,9 +91,14 @@ class TaskFormBase(FormWithTags):
     # Subclasses must copy the fields list, because it gets modified by the framework.
     fields = ['num_people', 'assignees', 'score', 'tags']
     qualifier = 'task'
+    labels = {
+      'num_people': '# people',
+      'assignees': 'Assigned to',
+      'score': 'Points'
+    }
     help_texts = {
       'num_people': 'Number of people needed to perform this task on this day',
-      'score': 'Score each person performing this task on this day earns for doing so',
+      'score': 'Points each person performing this task on this day earns for doing so',
       'tags': 'Only people with at least one of these tags can be assigned this task on this day'
     }
     designator_field = None
@@ -192,16 +198,16 @@ class ParticipantForm(FormWithTags):
     fields = ['user', 'start_date', 'end_date', 'tags', 'initial_score']
     qualifier = 'participant'
     labels = {
-      'initial_score': 'Score'
+      'initial_score': 'Extra&nbsp;Pts'
     }
     help_texts = {
       'start_date': 'First day person is available for tasks',
       'end_date': 'Last day person is available for tasks',
-      'initial_score': 'Score person has already earned from out-of-band contributions',
+      'initial_score': 'Points this person has already earned from other contributions',
       'tags': 'Tags describing this person',
     }
 
-  user = UserField(help_text="Identify new or existing users as Firstname Lastname (email)")
+  user = UserField(help_text='Identify new or existing users as Firstname Lastname (email)')
 
   def __init__(self, *args, **kwargs):
     # Apply the hack to pass the id -> user map into the widget.

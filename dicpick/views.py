@@ -14,12 +14,14 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
-from django.http import JsonResponse, HttpResponseRedirect
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
+from django.utils import translation
 from django.utils.functional import cached_property
+from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
-from dicpick.assign import assign
+from dicpick.assign import assign_for_task_ids
 from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
@@ -38,6 +40,14 @@ class CampRelatedMixin(object):
 class IsCampAdminMixin(UserPassesTestMixin, CampRelatedMixin):
   def test_func(self):
     return self.request.user.is_superuser or self.request.user.groups.filter(pk=self.camp.admin_group_id).exists()
+
+  def get(self, request, *args, **kwargs):
+    # Note that setting the language in the session here will only take effect on the next request.
+    if self.camp.name == 'Mystopia':
+      request.session[translation.LANGUAGE_SESSION_KEY] = 'en-mystopia'
+    else:
+      request.session[translation.LANGUAGE_SESSION_KEY] = 'en'
+    return super(IsCampAdminMixin, self).get(request, *args, **kwargs)
 
 
 # Home page.
@@ -63,10 +73,15 @@ class CampDetail(IsCampAdminMixin, DetailView):
 
 class EventRelatedMixin(IsCampAdminMixin):
   """Mixin for views relating to data on or under a single event."""
+  @classmethod
+  def prefetch_related(cls):
+    return ['tags']
+
   @cached_property
   def event(self):
-    return get_object_or_404(Event.objects.prefetch_related('tags'),
+    return get_object_or_404(Event.objects.prefetch_related(*self.prefetch_related()),
                              camp__slug=self.kwargs['camp_slug'], slug=self.kwargs['event_slug'])
+
 
 
 class EventRelatedTemplateMixin(EventRelatedMixin):
@@ -168,11 +183,28 @@ class TagsUpdate(EventRelatedFormsetUpdate):
               "E.g., \"early arriver\", \"returner\", \"camp manager\""
 
 
+class ParticipantScores(EventRelatedTemplateMixin, TemplateView):
+  template_name = 'dicpick/participant_scores.html'
+
+  @classmethod
+  def prefetch_related(cls):
+    return ['participants', 'participants__user', 'participants__tasks']
+
+
 class ParticipantsUpdate(EventRelatedFormsetUpdate):
   form_class = EventRelatedFormsetUpdate.create_form_class(ParticipantForm, formset_base_class=ParticipantInlineFormset)
-  legend = 'Enter Participants'
-  help_text = ("Details of a user's participation in this event.\n"
+  help_text = ("Details of a person's participation in this event.\n"
                "Existing users are identified via email address.  New users are created as needed.")
+
+  @property
+  def legend(self):
+    return 'Enter {}'.format(_('Participants'))
+
+  @property
+  def help_text(self):
+    return ("Details of a {person}'s participation in this event.\n"
+            "Existing users are identified via email address.  New users are created as needed.".format(
+            person=_('person')))
 
   def get_form(self, form_class=None):
     formset = super(EventRelatedFormsetUpdate, self).get_form(form_class)
@@ -201,10 +233,12 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
           user.groups.add(self.camp.member_group)
       return super(ParticipantsUpdate, self).form_valid(formset)
 
+  def get_success_url(self):
+    return self.request.path   # Return to the same formset for further editing.
+
 
 class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
   form_class = ParticipantImportForm
-  legend = 'Upload Participant JSON'
   help_text = textwrap.dedent("""
     Provide a file containing JSON with the following format:
     ```{
@@ -213,6 +247,10 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
       email: jane.doe@email.com
     }```
   """)
+
+  @property
+  def legend(self):
+    return 'Upload {} JSON'.format(_('Participants'))
 
   def form_valid(self, form):
     if 'file' in self.request.FILES:
@@ -247,9 +285,12 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
 
 class TaskTypesUpdate(EventRelatedFormsetUpdate):
   form_class = EventRelatedFormsetUpdate.create_form_class(TaskTypeForm)
-  legend = 'Enter Task Types'
   help_text = 'These are categories of tasks, each of which must be performed on ' \
               'multiple days, possibly by multiple people.\nE.g., Morning MOOP Sweep, Dinner Sous Chef.'
+
+  @property
+  def legend(self):
+    return 'Edit {} Types'.format(_('Task'))
 
   def get_form_kwargs(self):
     kwargs = super(TaskTypesUpdate, self).get_form_kwargs()
@@ -262,19 +303,6 @@ class TaskTypesUpdate(EventRelatedFormsetUpdate):
     return kwargs
 
 
-class AssignButtonMixin(object):
-  # Subclasses can override one or both to restrict the tasks that will be assigned.
-  task_type = None
-  date = None
-
-  def get_context_data(self, **kwargs):
-    data = super(AssignButtonMixin, self).get_context_data(**kwargs)
-    data['show_assign_button'] = True
-    data['task_type'] = self.task_type
-    data['date'] = self.date
-    return data
-
-
 class TasksByType(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_type.html'
 
@@ -283,10 +311,17 @@ class TasksByDate(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_date.html'
 
 
-class InlineTaskFormsetUpdate(AssignButtonMixin, EventRelatedFormsetMixin, FormView):
+class InlineTaskFormsetUpdate(EventRelatedTemplateMixin, FormView):
+  template_name = 'dicpick/task_formset.html'
+
   def form_valid(self, form):
     if form.is_valid():
       form.save()
+    if 'assign' in self.request.POST:
+      # Weirdly, t['id'] is a full Task object, not an int.
+      # Note that we must let the assign code re-fetch the Task objects, so it can prefetch
+      # related objects, filter them etc.
+      assign_for_task_ids(self.event, [t['id'].id for t in form.cleaned_data])
     return super(InlineTaskFormsetUpdate, self).form_valid(form)
 
   def get_success_url(self):
@@ -347,19 +382,6 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
     )
     kwargs['event'] = self.event
     return kwargs
-
-
-class AssignTasks(EventRelatedMixin, View):
-  def post(self, request, camp_slug, event_slug):
-    task_type_str = request.POST.get('task_type')
-    date_str = request.POST.get('date')
-    task_type_id = int(task_type_str) if task_type_str else None
-    dt = datetime.datetime.strptime(date_str, '%Y_%m_%d') if date_str else None
-
-    assign(self.event, task_type_id, dt)
-
-    redirect = request.POST.get('redirect')
-    return HttpResponseRedirect(redirect)
 
 
 class ParticipantAutocomplete(EventRelatedMixin, View):
