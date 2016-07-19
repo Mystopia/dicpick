@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
-        ('django.contrib.auth', '0008_auto_20160531_2342'),
+        ('auth', '0008_auto_20160531_2342'),
     ]
 
     operations = [
