@@ -3,7 +3,7 @@
 
 {% block content %}
 
-  <legend>Hello {{ user }}</legend>
+  <legend>Hello {{ user.first_name }}</legend>
   <ul>
   {% for camp in camps %}
     <li><a href="{% url 'dicpick:camp_detail' camp.slug %}">{{ camp.name }}</a></li>

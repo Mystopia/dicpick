@@ -58,7 +58,11 @@ form.formset .control-label {
 }
 
 .participant-table-container {
-    width: 850px;
+    width: 900px;
+}
+
+.participant-table-container .field-tags {
+    width: 200px;
 }
 
 .event-menu-container {
@@ -77,11 +81,12 @@ form.formset .control-label {
 }
 
 .table-container .widget-dateinput {
-    width: 100px;
+    width: 85px;
+    padding: 6px 4px;
 }
 
 .table-container .widget-userwidget {
-    width: 400px;
+    width: 340px;
 }
 
 .table-container .widget-numberinput {

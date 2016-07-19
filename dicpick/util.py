@@ -4,6 +4,7 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.models import User
 from django.db import IntegrityError, transaction
 
@@ -14,13 +15,16 @@ def create_user(email, first_name, last_name, num_attempts=10):
     user.email = email
     user.first_name = first_name
     user.last_name = last_name
+    # Various django auth flows assume (e.g., password reset) require a non-null password.
+    # The user can do a password reset in the future to get a usable password.
+    user.password = make_password(User.objects.make_random_password())
 
     if attempt == 0:
-      user.username = first_name.lower()
+      user.username = first_name.lower()[:30]
     elif attempt == 1:
-      user.username = '{}{}'.format(first_name, last_name)
+      user.username = '{}{}'.format(first_name, last_name)[:30]
     else:
-      user.username = '{}{}{}'.format(first_name, last_name, attempt)
+      user.username = '{}{}'.format('{}{}'.format(first_name, last_name)[:29], attempt)
 
     try:
       # Since we catch an IntegrityError, we must wrap this block in a transaction.
@@ -28,7 +32,7 @@ def create_user(email, first_name, last_name, num_attempts=10):
       with transaction.atomic():
         user.save()
     except IntegrityError:
-      if attempt == num_attempts - 1:
+      if attempt >= num_attempts - 1:
         raise
       else:
         continue

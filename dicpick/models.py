@@ -91,6 +91,8 @@ class Event(ModelWithDateRange):
 
   @cached_property
   def score_per_participant(self):
+    if self.num_participants == 0:
+      return 0
     return int(self.total_score / self.num_participants + 0.5)
 
   def get_absolute_url(self):
@@ -129,6 +131,9 @@ class Participant(ModelWithDateRange):
   # Initial score that this participant has already earned through out-of-band contributions.
   # Assumed to be zero if unspecified.
   initial_score = models.IntegerField(blank=True, default=0)
+
+  # Do not assign this participant to tasks alongside these other participants.
+  do_not_assign_with = models.ManyToManyField('self', blank=True)
 
   @cached_property
   def assigned_score(self):

@@ -43,3 +43,6 @@ def maybe_cache_templates(loaders):
     )
   else:
     return loaders  # No caching.
+
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

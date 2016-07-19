@@ -37,9 +37,31 @@ $(function() {
     });
   });
 
+  $('.with-select2 select.field-do_not_assign_with').each(function() {
+
+    $(this).select2({
+      ajax: {
+        url: autocompleteUrl,
+        dataType: 'json',
+        delay: 250,
+        cache: true,
+        data: function(params) {
+          return {
+            q: params.term
+          };
+        }
+      },
+      escapeMarkup: function (markup) { return markup; },  // Allow markup in our template.
+      templateResult: function(item) {
+        return '<div class="do-not-assign-with-option">' + item.text + '</div>';
+      },
+      minimumInputLength: 2
+    });
+  });
+
   // Initialize other select boxes.
 
-  $('.with-select2 select').not('select.field-assignees').select2();
+  $('.with-select2 select').not('select.field-assignees').not('select.field-do_not_assign_with').select2();
 
   // Initialize date fields.
 

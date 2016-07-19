@@ -198,7 +198,7 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
 
   @property
   def legend(self):
-    return 'Enter {}'.format(_('Participants'))
+    return 'Edit {}'.format(_('Participants'))
 
   @property
   def help_text(self):
@@ -219,7 +219,7 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
       Participant.objects
         .filter(event=self.event)
         .select_related('user')
-        .prefetch_related('tags')
+        .prefetch_related('tags', 'do_not_assign_with__user')
         .order_by('user__first_name', 'user__last_name')
     )
     return kwargs
@@ -311,7 +311,7 @@ class TasksByDate(EventRelatedTemplateMixin, TemplateView):
   template_name = 'dicpick/tasks_by_date.html'
 
 
-class InlineTaskFormsetUpdate(EventRelatedTemplateMixin, FormView):
+class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
   template_name = 'dicpick/task_formset.html'
 
   def form_valid(self, form):
@@ -329,8 +329,9 @@ class InlineTaskFormsetUpdate(EventRelatedTemplateMixin, FormView):
 
 
 class TasksByTypeUpdate(InlineTaskFormsetUpdate):
+  @property
   def legend(self):
-    return 'Tweak data for {} tasks'.format(self.task_type.name)
+    return 'Edit {} {}'.format(self.task_type.name, _('Tasks'))
 
   @cached_property
   def task_type(self):
@@ -360,8 +361,9 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
 
 
 class TasksByDateUpdate(InlineTaskFormsetUpdate):
+  @property
   def legend(self):
-    return 'Tweak data for tasks on {}'.format(self.date)
+    return 'Edit {} on {}'.format(_('Tasks'), self.date)
 
   @property
   def date(self):
@@ -410,7 +412,7 @@ class ParticipantAutocomplete(EventRelatedMixin, View):
     results = []
     for p in qs:
       result = {'id': p.id, 'text': '{} {}'.format(p.user.first_name, p.user.last_name)}
-      if for_date < p.start_date or for_date > p.end_date:
+      if for_date and (for_date < p.start_date or for_date > p.end_date):
         result['disabled'] = True
         result['disqualified_for_date'] = True
         result['tooltip'] = 'Available {}-{}.'.format(fmt_date(p.start_date), fmt_date(p.end_date))

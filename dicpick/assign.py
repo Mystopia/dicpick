@@ -22,9 +22,11 @@ class NoEligibleParticipant(Exception):
 
 def _is_eligible(task, participant):
   task_tags = set(task.tags.all())
+  for a in task.assignees.all():
+    if participant == a or participant in a.do_not_assign_with.all():
+      return False
   return (participant.is_in_date_range(task.date) and
-          (not task_tags or task_tags.intersection(participant.tags.all())) and
-          participant not in task.assignees.all())
+          (not task_tags or task_tags.intersection(participant.tags.all())))
 
 
 def assign_from_request(event, request):
@@ -57,7 +59,7 @@ def assign_for_filter(event, **task_filter):
         .annotate(assignee_count=Count('assignees'))
         .filter(assignee_count__lt=F('num_people'), task_type__event=event, **task_filter)
         .select_related('task_type')
-        .prefetch_related('tags', 'assignees')
+        .prefetch_related('tags', 'assignees', 'assignees__do_not_assign_with')
         .order_by()  # Clear the default ordering to avoid superfluous grouping.
   )
   participants = list(

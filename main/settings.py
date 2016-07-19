@@ -11,6 +11,11 @@ SITE_ID = 1
 
 SITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+PASSWORD_HASHERS = [
+  # Require bcrypt.
+  'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
+]
+
 
 # Set up logging without allowing Django to add its defaults, as they are notoriously difficult to override properly.
 
@@ -48,10 +53,6 @@ LOGGING = {
       'handlers': ['console'],
       'level': 'INFO'
     },
-    'allauth': {
-      'handlers': ['console'],
-      'level': 'INFO'
-    },
     'dicpick': {
       'handlers': ['console'],
       'level': 'INFO'
@@ -86,11 +87,6 @@ INSTALLED_APPS = (
 
   #'debug_toolbar',
 
-  'allauth',
-  'allauth.account',
-  'allauth.socialaccount',
-  'allauth.socialaccount.providers.twitter',
-
   'dicpick.apps.DicPickConfig',
 )
 
@@ -108,10 +104,7 @@ MIDDLEWARE_CLASSES = (
 )
 
 AUTHENTICATION_BACKENDS = (
-  # Needed to login by username in Django admin, regardless of allauth.
   'django.contrib.auth.backends.ModelBackend',
-  # allauth-specific authentication methods.
-  'allauth.account.auth_backends.AuthenticationBackend',
 )
 
 LOGIN_REDIRECT_URL = 'main'
@@ -156,8 +149,6 @@ INTERNAL_IPS = [
 ]
 
 template_loaders = (
-  # Note that order matters: We want our allauth templates to override the allauth app's defaults,
-  # so we must try the filesystem loader before looking in any app dirs.
   'django.template.loaders.filesystem.Loader',
   'django.template.loaders.app_directories.Loader',
 )
@@ -166,7 +157,7 @@ TEMPLATES = [
   {
     'BACKEND': 'django.template.backends.django.DjangoTemplates',
     'DIRS': [
-      # Overrides of templates loaded by other apps, such as allauth.
+      # Overrides of templates loaded by other apps, if any.
       # These paths should use forward slashes even on Windows.
       '{}/dicpick/templates'.format(SITE_ROOT)
     ],
@@ -182,6 +173,8 @@ TEMPLATES = [
     },
   },
 ]
+
+DEFAULT_FROM_EMAIL = 'no-reply@mystopia.camp'
 
 MATERIALITY_DJANGO_STATIC_IGNORE_FILE = 'main/ignore_patterns.txt'
 

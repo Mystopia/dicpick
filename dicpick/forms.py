@@ -105,6 +105,7 @@ class TaskFormBase(FormWithTags):
 
   def __init__(self, *args, **kwargs):
     participants_by_id = kwargs.pop('participants_by_id')
+    kwargs.pop('users_by_id')
     super(TaskFormBase, self).__init__(*args, **kwargs)
     assignees_field = self.fields['assignees']
     # Create <option> tags for the currently selected values in this form, so that the initial data displays
@@ -113,7 +114,7 @@ class TaskFormBase(FormWithTags):
     # TODO: Restrict to just the assignees that match on dates and tags.
     assignees_field.choices = [(assignees_field.prepare_value(participants_by_id[x]),
                                 assignees_field.label_from_instance(participants_by_id[x]))
-                               for x in self.initial['assignees']]
+                               for x in self.initial.get('assignees', [])]
     assignees_field.widget.attrs['dp-for-date'] = self.instance.date
     assignees_field.widget.attrs['dp-for-tags'] = '|'.join([t.name for t in self.instance.tags.all()])
 
@@ -195,7 +196,7 @@ class UserField(MultiValueField):
 class ParticipantForm(FormWithTags):
   class Meta:
     model = Participant
-    fields = ['user', 'start_date', 'end_date', 'tags', 'initial_score']
+    fields = ['user', 'start_date', 'end_date', 'tags', 'initial_score', 'do_not_assign_with']
     qualifier = 'participant'
     labels = {
       'initial_score': 'Extra&nbsp;Pts'
@@ -203,8 +204,9 @@ class ParticipantForm(FormWithTags):
     help_texts = {
       'start_date': 'First day person is available for tasks',
       'end_date': 'Last day person is available for tasks',
-      'initial_score': 'Points this person has already earned from other contributions',
       'tags': 'Tags describing this person',
+      'initial_score': 'Points this person has already earned from other contributions',
+      'do_not_assign_with': 'Do not assign this person to tasks alongside these other people',
     }
 
   user = UserField(help_text='Identify new or existing users as Firstname Lastname (email)')
@@ -212,10 +214,19 @@ class ParticipantForm(FormWithTags):
   def __init__(self, *args, **kwargs):
     # Apply the hack to pass the id -> user map into the widget.
     # See ParticipantInlineFormset below for details.
+    participants_by_id = kwargs.pop('participants_by_id')
     users_by_id = kwargs.pop('users_by_id')
     super(ParticipantForm, self).__init__(*args, **kwargs)
     self.fields['user'].users_by_id = users_by_id
     self.fields['user'].widget.users_by_id = users_by_id
+
+    do_not_assign_with_field = self.fields['do_not_assign_with']
+    # Create <option> tags for the currently selected values in this form, so that the initial data displays
+    # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
+    # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
+    do_not_assign_with_field.choices = [(do_not_assign_with_field.prepare_value(participants_by_id[x]),
+                                         do_not_assign_with_field.label_from_instance(participants_by_id[x]))
+                                        for x in self.initial.get('do_not_assign_with', [])]
 
   def _get_validation_exclusions(self):
     # Don't validate the user field, because it will cause at least one db query per form in the formset.
@@ -273,11 +284,14 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
   def __init__(self, *args, **kwargs):
     event = kwargs.get('event')  # Superclass needs this kwarg, and will pop it off before passing the kwargs up.
     super(ParticipantAndTagChoicesFormsetMixin, self).__init__(*args, **kwargs)
-    self._participant_choices = Participant.objects.filter(event=event).select_related('user')
+    participant_choices = Participant.objects.filter(event=event).select_related('user').all()
+    self._participants_by_id = {p.id: p for p in participant_choices}
+    self._users_by_id = {p.user_id: p.user for p in participant_choices}
 
   def get_form_kwargs(self, index):
     kwargs = super(ParticipantAndTagChoicesFormsetMixin, self).get_form_kwargs(index)
-    kwargs['participants_by_id'] = {p.id: p for p in self._participant_choices}
+    kwargs['participants_by_id'] = self._participants_by_id
+    kwargs['users_by_id'] = self._users_by_id
     return kwargs
 
 
@@ -297,19 +311,7 @@ class ModelFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMi
   pass
 
 
-class ParticipantInlineFormset(InlineFormsetWithTagChoices):
-  def __init__(self, *args, **kwargs):
-    super(ParticipantInlineFormset, self).__init__(*args, **kwargs)
-    # Hack to pass in the id -> user mapping to the custom widget, so that its decompress method doesn't
-    # have to hit the database once per form in the formset.
-    self._users_by_id = {}
-    self._participants_by_id = {}
-    for form in self.forms:
-      participant = form.instance
-      if participant and participant.id and participant.user_id:
-        self._participants_by_id[participant.id] = participant
-        self._users_by_id[participant.user_id] = participant.user
-
+class ParticipantInlineFormset(InlineFormsetWithTagAndParticipantChoices):
   def add_fields(self, form, index):
     super(ParticipantInlineFormset, self).add_fields(form, index)
     def participant_id_to_python(pk):
@@ -318,8 +320,3 @@ class ParticipantInlineFormset(InlineFormsetWithTagChoices):
       except KeyError:
         raise ValidationError('Invalid choice')
     form.fields['id'].to_python = participant_id_to_python
-
-  def get_form_kwargs(self, index):
-    kwargs = super(ParticipantInlineFormset, self).get_form_kwargs(index)
-    kwargs['users_by_id'] = self._users_by_id
-    return kwargs

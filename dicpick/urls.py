@@ -5,10 +5,9 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
 from django.conf.urls import url
-# Monkeypatch email uniqueness.
-from django.contrib.auth.models import User
 
 from dicpick import views
+
 
 urlpatterns = [
   url(r'^$', views.user_home, name='user_home'),
@@ -32,6 +31,3 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/$', views.TasksByDate.as_view(), name='tasks_by_date'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/(?P<date>\w+)$', views.TasksByDateUpdate.as_view(), name='tasks_by_date_update'),
 ]
-
-
-User._meta.get_field('email')._unique = True
