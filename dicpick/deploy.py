@@ -9,7 +9,7 @@ from materiality.util.deploy import Deployer
 
 class DicPickDeployer(Deployer):
   def __init__(self):
-    super(DicPickDeployer, self).__init__('cardigan')
+    super(DicPickDeployer, self).__init__('dicpick')
 
   def compile_js(self):
     return []
