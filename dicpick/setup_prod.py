@@ -10,7 +10,7 @@ from materiality.util.setup_prod import SetupProd
 class DicPickSetupProd(SetupProd):
   @classmethod
   def create(cls):
-    return super(DicPickSetupProd, cls).create(app_name='dicpick')
+    return super(DicPickSetupProd, cls).create(app_name='dicpick', twitter_api=False)
 
 
 if __name__ == '__main__':
