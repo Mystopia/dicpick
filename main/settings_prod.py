@@ -17,8 +17,6 @@ else:
 
 # Get local settings from heroku environment.
 SECRET_KEY = os.environ['SECRET_KEY']
-TWITTER_APP_ID = os.environ['TWITTER_APP_ID']
-TWITTER_APP_SECRET = os.environ['TWITTER_APP_SECRET']
 
 SECURE_SSL_REDIRECT = True
 
