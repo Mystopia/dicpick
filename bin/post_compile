@@ -24,7 +24,7 @@ if [ ! -d "${BUILD_DIR}/gettext-0.19" ]; then
         echo "Checksum DOES NOT match. Gettext will not be installed."
         exit 1
     fi
-    tar -zxvf tmp-gettext.tar.gz > /dev/null
+    tar -xfz tmp-gettext.tar.gz
     rm tmp-gettext.tar.gz
     popd >/dev/null
 
@@ -39,8 +39,10 @@ if [ ! -d "${BUILD_DIR}/gettext-0.19" ]; then
 fi
 
 echo "-----> Compiling translation files"
-python manage.py compilemessages 2>&1 | indent
+pushd dicpick >/dev/null
+python ../manage.py compilemessages 2>&1 | indent
 rm -rf .heroku/vendor/gettext/
+popd >/dev/null
 
 echo "-----> Post-compile done"
 
