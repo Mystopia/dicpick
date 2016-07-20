@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# The post_compile hook is run by heroku-buildpack-python.
+
+indent() {
+    RE="s/^/       /"
+    [ $(uname) == "Darwin" ] && sed -l "$RE" || sed -u "$RE"
+}
+
+echo "-----> In post-compile hook"
+
+if [ ! -d ${TARGET_DIR}/gettext ]; then
+    echo "-----> Installing gettext msgfmt..."
+
+    GETTEXT_CHECKSUM="ceZfT0KqGBZyr52s/9yULR3vsmXPS5HmUcs+dup/DXg="
+    GETTEXT_TARBALL=https://s3-eu-west-1.amazonaws.com/midgard-heroku/gettext.tar.gz
+
+    pushd ${BUILD_DIR} >/dev/null
+    rm -f tmp-gettext.tar.gz
+
+    curl -s -L -o tmp-gettext.tar.gz "${GETTEXT_TARBALL}"
+    if [ "${GETTEXT_CHECKSUM}" != "$(openssl sha -sha256 -binary tmp-gettext.tar.gz | openssl base64)" ]; then
+        echo "Checksum DOES NOT match. Gettext will not be installed."
+        exit 1
+    fi
+    tar -zxvf tmp-gettext.tar.gz > /dev/null
+    rm tmp-gettext.tar.gz
+    popd >/dev/null
+
+    export PATH=${BUILD_DIR}/gettext/bin:$PATH
+
+    echo "-----> done installing gettext msgfmt"
+fi
+
+echo "-----> Compiling translation files"
+python manage.py compilemessages 2>&1 | indent
+rm -rf .heroku/vendor/gettext/
+
+echo "-----> Post-compile done"
+
