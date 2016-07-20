@@ -24,7 +24,7 @@ if [ ! -d "${BUILD_DIR}/gettext-0.19" ]; then
         echo "Checksum DOES NOT match. Gettext will not be installed."
         exit 1
     fi
-    tar -xfz tmp-gettext.tar.gz
+    tar -zxvf tmp-gettext.tar.gz >/dev/null
     rm tmp-gettext.tar.gz
     popd >/dev/null
 
