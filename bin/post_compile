@@ -28,12 +28,12 @@ if [ ! -d ${TARGET_DIR}/gettext ]; then
     rm tmp-gettext.tar.gz
     popd >/dev/null
 
-    pushd "${BUILD_DIR}/gettext" >/dev/null
+    pushd "${BUILD_DIR}/gettext-0.19" >/dev/null
     ./configure
     make
     popd >/dev/null
 
-    export PATH="${BUILD_DIR}/gettext/bin:${PATH}"
+    export PATH="${BUILD_DIR}/gettext-0.19/bin:${PATH}"
 
     echo "-----> done installing gettext msgfmt"
 fi
