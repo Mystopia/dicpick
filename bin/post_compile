@@ -16,7 +16,7 @@ if [ ! -d ${TARGET_DIR}/gettext ]; then
     GETTEXT_CHECKSUM="qfnHdkvGh4KspXaHofFsIovDIQacU4MlkjUTuEG9hHw="
     GETTEXT_TARBALL="http://ftp.gnu.org/gnu/gettext/gettext-0.19.tar.gz"
 
-    pushd ${BUILD_DIR} >/dev/null
+    pushd "${BUILD_DIR}" >/dev/null
     rm -f tmp-gettext.tar.gz
 
     curl -s -L -o tmp-gettext.tar.gz "${GETTEXT_TARBALL}"
@@ -28,7 +28,12 @@ if [ ! -d ${TARGET_DIR}/gettext ]; then
     rm tmp-gettext.tar.gz
     popd >/dev/null
 
-    export PATH=${BUILD_DIR}/gettext/bin:$PATH
+    pushd "${BUILD_DIR}/gettext" >/dev/null
+    ./configure
+    make
+    popd >/dev/null
+
+    export PATH="${BUILD_DIR}/gettext/bin:${PATH}"
 
     echo "-----> done installing gettext msgfmt"
 fi
