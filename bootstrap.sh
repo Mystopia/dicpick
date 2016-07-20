@@ -1,6 +1,7 @@
 #!/bin/sh
 
-COMMONS=materiality.commons-0.1.17
+# TODO: It looks like PyPi no longer has permalinks to tarballs.
+COMMONS=materiality.commons-0.1.20
 
 if [ ! -e .bootstrap/src ]; then
     mkdir -p .bootstrap
