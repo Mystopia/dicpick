@@ -13,8 +13,8 @@ echo "-----> In post-compile hook"
 if [ ! -d ${TARGET_DIR}/gettext ]; then
     echo "-----> Installing gettext msgfmt..."
 
-    GETTEXT_CHECKSUM="ceZfT0KqGBZyr52s/9yULR3vsmXPS5HmUcs+dup/DXg="
-    GETTEXT_TARBALL=https://s3-eu-west-1.amazonaws.com/midgard-heroku/gettext.tar.gz
+    GETTEXT_CHECKSUM="qfnHdkvGh4KspXaHofFsIovDIQacU4MlkjUTuEG9hHw="
+    GETTEXT_TARBALL="http://ftp.gnu.org/gnu/gettext/gettext-0.19.tar.gz"
 
     pushd ${BUILD_DIR} >/dev/null
     rm -f tmp-gettext.tar.gz
