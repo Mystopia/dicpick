@@ -8,6 +8,10 @@ body {
     margin-bottom: 24px;
 }
 
+code {
+    color: green;
+}
+
 .intro-text {
     width: 600px;
     background-color: white;

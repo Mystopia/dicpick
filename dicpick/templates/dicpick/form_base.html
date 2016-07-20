@@ -19,6 +19,13 @@
       <form {% if form.is_multipart %}enctype="multipart/form-data"{% endif %} method="post"
             class="form-horizontal with-select2 {% block form_class %}{% endblock form_class %}">
         {% csrf_token %}
+        {% block non_field_errors %}
+          <div class="{% if form.non_field_errors %}has-error{% endif %}">
+            {% for error in form.non_field_errors %}
+              <span class="help-block field-error"><strong>{{ error }}</strong></span>
+            {% endfor %}
+          </div>
+        {% endblock non_field_errors %}
         {% block form_content %}
         {% endblock form_content %}
         {% if form|has_required_fields %}

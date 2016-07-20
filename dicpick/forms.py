@@ -249,8 +249,8 @@ class ParticipantImportForm(Form):
       url = self.cleaned_data.get('url')
       try:
         r = requests.get(url)
-      except IOError:
-        raise ValidationError('Failed to fetch data from {}'.format(url))
+      except IOError as e:
+        raise ValidationError('Failed to fetch data from {} ({})'.format(url, e))
       if r.status_code != 200:
         raise ValidationError('Failed to fetch data from {} (received status {} {})'.format(url, r.status_code, r.reason))
       try:

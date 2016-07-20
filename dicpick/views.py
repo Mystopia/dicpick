@@ -240,6 +240,7 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
 
 class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
   form_class = ParticipantImportForm
+
   help_text = textwrap.dedent("""
     Provide a file containing JSON with the following format:
     ```{
@@ -257,7 +258,7 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
     if 'file' in self.request.FILES:
       participant_data = json.load(self.request.FILES['file'])
     else:
-      participant_data = json.load(form.cleaned_data['data_from_url'])
+      participant_data = json.loads(form.cleaned_data['data_from_url'])
 
     for record in participant_data:
       email = record['email'].strip()
