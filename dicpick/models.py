@@ -74,12 +74,12 @@ class Event(ModelWithDateRange):
   @cached_property
   def total_score(self):
     return Task.objects.filter(task_type__event=self).aggregate(
-        total_score=Sum(F('num_people')*F('score')))['total_score']
+        total_score=Sum(F('num_people')*F('score')))['total_score'] or 0
 
   @cached_property
   def total_assigned_score(self):
     return Task.assignees.through.objects.filter(task__task_type__event=self).aggregate(
-        total_assigned_score=Sum('task__score'))['total_assigned_score']
+        total_assigned_score=Sum('task__score'))['total_assigned_score'] or 0
 
   @cached_property
   def num_participants(self):

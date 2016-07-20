@@ -11,11 +11,6 @@ SITE_ID = 1
 
 SITE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-PASSWORD_HASHERS = [
-  # Require bcrypt.
-  'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
-]
-
 
 # Set up logging without allowing Django to add its defaults, as they are notoriously difficult to override properly.
 
