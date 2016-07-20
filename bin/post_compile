@@ -11,7 +11,7 @@ indent() {
 echo "-----> In post-compile hook"
 
 if [ ! -d ${TARGET_DIR}/gettext ]; then
-    echo "-----> Installing gettext msgfmt..."
+    echo "-----> Installing gettext msgfmt in ${BUILD_DIR}..."
 
     GETTEXT_CHECKSUM="qfnHdkvGh4KspXaHofFsIovDIQacU4MlkjUTuEG9hHw="
     GETTEXT_TARBALL="http://ftp.gnu.org/gnu/gettext/gettext-0.19.tar.gz"
