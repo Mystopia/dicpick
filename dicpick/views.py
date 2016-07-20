@@ -136,6 +136,7 @@ class EventFormMixin(EventMixin, EventRelatedSingleFormMixin):
 
 
 class EventCreate(EventFormMixin, CreateView):
+  @property
   def event(self):
     return self.object
 
