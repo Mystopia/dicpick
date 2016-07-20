@@ -53,7 +53,7 @@ LOGGING = {
       'level': 'INFO'
     },
     'django.db.backends': {
-      'handlers': ['file', 'console'],
+      'handlers': ['console'],
       'level': 'INFO',  # Set to DEBUG to see live SQL queries.
       'propagate': False,
     },

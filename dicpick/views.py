@@ -43,7 +43,7 @@ class IsCampAdminMixin(UserPassesTestMixin, CampRelatedMixin):
 
   def get(self, request, *args, **kwargs):
     # Note that setting the language in the session here will only take effect on the next request.
-    if self.camp.name == 'Mystopia':
+    if self.camp.slug == 'mystopia':
       request.session[translation.LANGUAGE_SESSION_KEY] = 'en-mystopia'
     else:
       request.session[translation.LANGUAGE_SESSION_KEY] = 'en'
