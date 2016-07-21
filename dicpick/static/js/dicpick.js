@@ -3,13 +3,14 @@ $(function() {
 
   var pathParts = window.location.pathname.split('/');
   var eventPathPrefix = pathParts[1] + '/' + pathParts[2];  // pathParts[0] is expected to be an empty string.
-  var autocompleteUrl = eventPathPrefix + '/participants/autocomplete/';
+  var tagAutoCompleteUrl = eventPathPrefix + '/tags/autocomplete/';
+  var participantAutocompleteUrl = eventPathPrefix + '/participants/autocomplete/';
 
   $('.with-select2 select.field-assignees').each(function() {
     var numPeople = parseInt($(this).closest('tr').find('input.field-num_people').val());
     $(this).select2({
       ajax: {
-        url: autocompleteUrl,
+        url: participantAutocompleteUrl,
         dataType: 'json',
         delay: 250,
         cache: true,
@@ -37,11 +38,35 @@ $(function() {
     });
   });
 
-  $('.with-select2 select.field-do_not_assign_with').each(function() {
+  $('.with-select2 select.field-do_not_assign_to').each(function() {
 
     $(this).select2({
       ajax: {
-        url: autocompleteUrl,
+        url: participantAutocompleteUrl,
+        dataType: 'json',
+        delay: 250,
+        cache: true,
+        data: function (params) {
+          return {
+            q: params.term
+          };
+        }
+      },
+      escapeMarkup: function (markup) {
+        return markup;
+      },  // Allow markup in our template.
+      templateResult: function (item) {
+        return '<div class="do-not-assign-to-option">' + item.text + '</div>';
+      },
+      minimumInputLength: 2
+    });
+  });
+
+  $('select.field-do_not_assign_with').each(function() {
+
+    $(this).select2({
+      ajax: {
+        url: participantAutocompleteUrl,
         dataType: 'json',
         delay: 250,
         cache: true,
@@ -59,9 +84,35 @@ $(function() {
     });
   });
 
+  $('select.field-tags').each(function() {
+
+    $(this).select2({
+      ajax: {
+        url: tagAutoCompleteUrl,
+        dataType: 'json',
+        delay: 250,
+        cache: true,
+        data: function(params) {
+          return {
+            q: params.term
+          };
+        }
+      },
+      escapeMarkup: function (markup) { return markup; },  // Allow markup in our template.
+      templateResult: function(item) {
+        return '<div>' + item.text + '</div>';
+      },
+      minimumInputLength: 2
+    });
+  });
+
   // Initialize other select boxes.
 
-  $('.with-select2 select').not('select.field-assignees').not('select.field-do_not_assign_with').select2();
+  //$('select')
+  //  .not('.field-assignees')
+  //  .not('.field-do_not_assign_to')
+  //  .not('.field-do_not_assign_with')
+  //  .select2();
 
   // Initialize date fields.
 
@@ -73,7 +124,13 @@ $(function() {
 
   // Initialize tooltips.
 
-  $(function() {
-    $('[data-toggle="tooltip"]').tooltip()
+  $('[data-toggle="tooltip"]').tooltip();
+
+  // Initialize fileinputs.
+
+  $('.widget-fileuploadwidget').on('change', function() {
+    var input = $(this);
+    var fileName = input.val().replace(/\\/g, '/').replace(/.*\//, '');
+    input.parent().siblings('.file-upload-path').text(fileName);
   });
 });

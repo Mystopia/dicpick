@@ -21,10 +21,13 @@ class NoEligibleParticipant(Exception):
 
 
 def _is_eligible(task, participant):
-  task_tags = set(task.tags.all())
+  if participant in task.do_not_assign_to.all():
+    return False
   for a in task.assignees.all():
     if participant == a or participant in a.do_not_assign_with.all():
       return False
+
+  task_tags = set(task.tags.all())
   return (participant.is_in_date_range(task.date) and
           (not task_tags or task_tags.intersection(participant.tags.all())))
 
@@ -46,11 +49,11 @@ def assign_for_task_type_and_date(event, task_type_id, dt):
   if dt is not None:
     task_filter['date'] = dt
 
-  assign_for_filter(event, **task_filter)
+  return assign_for_filter(event, **task_filter)
 
 
 def assign_for_task_ids(event, task_ids):
-  assign_for_filter(event, id__in=task_ids)
+  return assign_for_filter(event, id__in=task_ids)
 
 
 def assign_for_filter(event, **task_filter):
@@ -101,20 +104,27 @@ def assign_for_filter(event, **task_filter):
     task_type_count_participants[task_type_id][0].discard(participants_by_id[participant_id])
     task_type_count_participants[task_type_id][count].add(participants_by_id[participant_id])
 
+  unassignable_tasks = set()
   for task in tasks:
-    for i in range(len(task.assignees.all()), task.num_people):
-      # First try candidates with 0 tasks of this type, then 1, etc.  This ensures the best spread of task diversity.
-      count_participant_pairs = sorted(task_type_count_participants[task.task_type_id].items())
-      for count, candidates in count_participant_pairs:
-        eligible = [p for p in candidates if _is_eligible(task, p)]
-        if eligible:  # Pick some random candidate from among those with the lowest score.
-          lowest_score = min(p.assigned_score for p in eligible)
-          assign_to = random.choice([p for p in eligible if p.assigned_score == lowest_score])
-          break
-      else:
-        raise NoEligibleParticipant(task)
+    try:
+      for i in range(len(task.assignees.all()), task.num_people):
+        # First try candidates with 0 tasks of this type, then 1, etc.  This ensures the best spread of task diversity.
+        count_participant_pairs = sorted(task_type_count_participants[task.task_type_id].items())
+        for count, candidates in count_participant_pairs:
+          eligible = [p for p in candidates if _is_eligible(task, p)]
+          if eligible:  # Pick some random candidate from among those with the lowest score.
+            lowest_score = min(p.assigned_score for p in eligible)
+            assign_to = random.choice([p for p in eligible if p.assigned_score == lowest_score])
+            break
+        else:
+          unassignable_tasks.add(task.id)
+          raise NoEligibleParticipant(task)
 
-      task_type_count_participants[task.task_type.id][count].remove(assign_to)
-      task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-      task.assignees.add(assign_to)  # Will autosave to the db.  TODO: Batch these?
-      assign_to.assigned_score += task.score
+        task_type_count_participants[task.task_type.id][count].remove(assign_to)
+        task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
+        task.assignees.add(assign_to)  # Will autosave to the db.  TODO: Batch these?
+        assign_to.assigned_score += task.score
+    except NoEligibleParticipant:
+      pass
+
+  return unassignable_tasks

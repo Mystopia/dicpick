@@ -9,8 +9,9 @@ import re
 import requests
 from django.contrib.auth.models import User
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
-                          ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError)
+                          ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError, FileInput)
 from django.forms.utils import pretty_name
+from django.utils.html import format_html
 
 from dicpick.models import Event, Participant, Tag, Task, TaskType
 from dicpick.util import create_user
@@ -54,10 +55,14 @@ class FormWithTags(DicPickModelForm):
   Computing them would involve re-evaluating the same queryset for every form in a formset.
   """
   def __init__(self, *args, **kwargs):
-    tags = kwargs.pop('tag_choices')
+    tags_by_id = kwargs.pop('tags_by_id')
     super(FormWithTags, self).__init__(*args, **kwargs)
-    tags_field = self.fields['tags']
-    tags_field.choices = [(tags_field.prepare_value(obj), tags_field.label_from_instance(obj)) for obj in tags]
+    # Create <option> tags for the currently selected values in this form, so that the initial data displays
+    # correctly. We don't create <option> tags for all other possible tag choices, as there may be many
+    # tags X many forms in the formset.  The other choices will come from the remote autocomplete view.
+    field = self.fields['tags']
+    field.choices = [(field.prepare_value(tags_by_id[x]), field.label_from_instance(tags_by_id[x]))
+                     for x in self.initial.get('tags', [])]
 
 
 class TagForm(DicPickModelForm):
@@ -89,17 +94,20 @@ class TaskFormBase(FormWithTags):
   class Meta:
     model = Task
     # Subclasses must copy the fields list, because it gets modified by the framework.
-    fields = ['num_people', 'assignees', 'score', 'tags']
+    fields = ['num_people', 'assignees', 'score', 'tags', 'do_not_assign_to']
     qualifier = 'task'
     labels = {
       'num_people': '# people',
       'assignees': 'Assigned to',
-      'score': 'Points'
+      'score': 'Points',
+      'do_not_assign_to': 'Unassignable'
     }
     help_texts = {
       'num_people': 'Number of people needed to perform this task on this day',
+      'assignees': 'People currently assigned to this task',
       'score': 'Points each person performing this task on this day earns for doing so',
-      'tags': 'Only people with at least one of these tags can be assigned this task on this day'
+      'tags': 'Only people with at least one of these tags can be assigned this task on this day',
+      'do_not_assign_to': 'These people cannot be assigned to this task'
     }
     designator_field = None
 
@@ -107,16 +115,19 @@ class TaskFormBase(FormWithTags):
     participants_by_id = kwargs.pop('participants_by_id')
     kwargs.pop('users_by_id')
     super(TaskFormBase, self).__init__(*args, **kwargs)
-    assignees_field = self.fields['assignees']
-    # Create <option> tags for the currently selected values in this form, so that the initial data displays
-    # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
-    # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
-    # TODO: Restrict to just the assignees that match on dates and tags.
-    assignees_field.choices = [(assignees_field.prepare_value(participants_by_id[x]),
-                                assignees_field.label_from_instance(participants_by_id[x]))
-                               for x in self.initial.get('assignees', [])]
-    assignees_field.widget.attrs['dp-for-date'] = self.instance.date
-    assignees_field.widget.attrs['dp-for-tags'] = '|'.join([t.name for t in self.instance.tags.all()])
+
+    def setup_participants_m2m_field(field_name):
+      field = self.fields[field_name]
+      # Create <option> tags for the currently selected values in this form, so that the initial data displays
+      # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
+      # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
+      field.choices = [(field.prepare_value(participants_by_id[x]), field.label_from_instance(participants_by_id[x]))
+                       for x in self.initial.get(field_name, [])]
+      field.widget.attrs['dp-for-date'] = self.instance.date
+      field.widget.attrs['dp-for-tags'] = '|'.join([t.name for t in self.instance.tags.all()])
+
+    setup_participants_m2m_field('assignees')
+    setup_participants_m2m_field('do_not_assign_to')
 
 
 class TaskByTypeForm(TaskFormBase):
@@ -232,8 +243,16 @@ class ParticipantForm(FormWithTags):
     # Don't validate the user field, because it will cause at least one db query per form in the formset.
     return super(ParticipantForm, self)._get_validation_exclusions() + ['user']
 
+
+class FileUploadWidget(FileInput):
+  def render(self, name, value, attrs=None):
+    attrs['style'] = attrs.get('style', ' ') + 'display: none;'
+    return format_html("""<label class="btn btn-default btn-file">Browse {}</label><span class="file-upload-path"></span>""",
+                       super(FileInput, self).render(name, None, attrs=attrs))
+
+
 class ParticipantImportForm(Form):
-  file = FileField(label='Upload file', required=False)
+  file = FileField(label='Upload file', required=False, widget=FileUploadWidget)
   url = URLField(label='Fetch from URL', required=False)
 
   def clean(self):
@@ -263,12 +282,11 @@ class TagChoicesFormsetMixin(object):
   def __init__(self, *args, **kwargs):
     event = kwargs.pop('event')
     super(TagChoicesFormsetMixin, self).__init__(*args, **kwargs)
-    self._tag_choices = Tag.objects.filter(event=event)
+    self._tags_by_id = {t.id: t for t in Tag.objects.filter(event=event).all()}
 
   def get_form_kwargs(self, index):
     kwargs = super(TagChoicesFormsetMixin, self).get_form_kwargs(index)
-    if 'tags' in self.form.base_fields:
-      kwargs['tag_choices'] = self._tag_choices
+    kwargs['tags_by_id'] = self._tags_by_id
     return kwargs
 
 

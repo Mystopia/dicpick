@@ -10,6 +10,7 @@ body {
 
 code {
     color: green;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
 }
 
 .intro-text {
@@ -53,6 +54,10 @@ form.formset .control-label {
     width: 850px;
 }
 
+.type-table-container {
+    width: 900px;
+}
+
 .table-container.tasktype-table-container select.selectmultiple {
     width: 300px;
 }
@@ -76,6 +81,12 @@ form.formset .control-label {
     width: 200px;
     vertical-align: top;
     padding-top: 20px;
+}
+
+.file-upload-path {
+    padding-left: 8px;
+    font-family: "Bitstream Vera Sans Mono", Monaco, "Courier New", Courier, monospace;
+    font-weight: bold;
 }
 
 /* Default widget widths. */
@@ -107,8 +118,20 @@ form.formset .control-label {
     width: 300px;
 }
 
-.table-container select.selectmultiple {
-    width: 400px;
+.table-container select.field-tags {
+    width: 250px;
+}
+
+.table-container.participant-table-container select.field-tags {
+    width: 300px;
+}
+
+.table-container select.field-do_not_assign_to {
+    width: 200px;
+}
+
+.table-container select.field-do_not_assign_with {
+    width: 200px;
 }
 
 .table > tbody > tr > td.table-row-counter {

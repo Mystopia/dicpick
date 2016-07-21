@@ -20,6 +20,8 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/delete/$', views.EventDelete.as_view(), name='event_delete'),
 
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tags/$', views.TagsUpdate.as_view(), name='tags_update'),
+  url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tags/autocomplete/$', views.TagAutocomplete.as_view(), name='tag_autocomplete'),
+
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/$', views.ParticipantsUpdate.as_view(), name='participants_update'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/import/$', views.ParticipantsImport.as_view(), name='participants_import'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/participants/scores/$', views.ParticipantScores.as_view(), name='participants_scores'),

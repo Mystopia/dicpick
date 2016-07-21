@@ -11,6 +11,7 @@ import textwrap
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
@@ -21,7 +22,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
-from dicpick.assign import assign_for_task_ids
+from dicpick.assign import assign_for_task_ids, NoEligibleParticipant
 from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
@@ -323,7 +324,14 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
       # Weirdly, t['id'] is a full Task object, not an int.
       # Note that we must let the assign code re-fetch the Task objects, so it can prefetch
       # related objects, filter them etc.
-      assign_for_task_ids(self.event, [t['id'].id for t in form.cleaned_data])
+      forms_by_task_id = {t['id'].id: f for (t, f) in zip(form.cleaned_data, form.forms)}
+      unassignable_tasks = assign_for_task_ids(self.event, [t['id'].id for t in form.cleaned_data])
+      if unassignable_tasks:
+        for task_id in unassignable_tasks:
+          forms_by_task_id[task_id].add_error(None,
+                                              "Couldn't find an eligible {} to perform this {}.".format(
+                                                  _('Participant'), _('Task')))
+        return self.form_invalid(form)
     return super(InlineTaskFormsetUpdate, self).form_valid(form)
 
   def get_success_url(self):
@@ -356,7 +364,7 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
       Task.objects
         .filter(task_type=self.task_type)
         .select_related('task_type')
-        .prefetch_related('tags', 'assignees', 'assignees__user')
+        .prefetch_related('tags', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
         .order_by('date')
     )
     return kwargs
@@ -381,11 +389,22 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
       Task.objects
         .filter(task_type__event=self.event, date=self.date)
         .select_related('task_type')
-        .prefetch_related('tags', 'assignees', 'assignees__user')
+        .prefetch_related('tags', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
         .order_by('task_type__name')
     )
     kwargs['event'] = self.event
     return kwargs
+
+
+class TagAutocomplete(EventRelatedMixin, View):
+  def get(self, request, camp_slug, event_slug):
+    query = request.GET.get('q') or ''
+    qs = Tag.objects.filter(event=self.event, name__istartswith=query)[:5]
+    results = [{'id': t.id, 'text': t.name} for t in qs]
+    ret = {
+      'results': results,
+    }
+    return JsonResponse(ret, safe=False)
 
 
 class ParticipantAutocomplete(EventRelatedMixin, View):

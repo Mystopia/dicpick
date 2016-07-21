@@ -195,5 +195,8 @@ class Task(models.Model):
   # The participants assigned to this task.
   assignees = models.ManyToManyField(Participant, related_name='tasks', blank=True)
 
+  # Participants that must not be assigned to this task.
+  do_not_assign_to = models.ManyToManyField(Participant, related_name='unassignable_tasks', blank=True)
+
   def __str__(self):
     return '{} on {}'.format(self.task_type.name, self.date)

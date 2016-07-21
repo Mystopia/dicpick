@@ -1,8 +1,22 @@
 {# Copyright 2016 Mystopia. #}
 {% extends 'dicpick/form_base.html' %}
-{% load form_helpers %}
+{% load dicpick_helpers %}
 
 {% block form_class %}formset{% endblock form_class %}
+
+{% block non_field_errors %}
+  {{ block.super }}
+  <div class="{% if form.non_form_errors %}has-error{% endif %}">
+    {% for error in form.non_form_errors %}
+      <span class="help-block field-error"><strong>{{ error }}</strong></span>
+    {% endfor %}
+  </div>
+  {% if form.errors|any %}
+    <div class="has-error">
+      <span class="help-block field-error"><strong>See inline errors below.</strong></span>
+    </div>
+    {% endif %}
+{% endblock non_field_errors %}
 
 {% block form_content %}
   {% block management_form %}<div>{{ form.management_form }}</div>{% endblock management_form %}
@@ -28,18 +42,9 @@
 
       <tbody class="inline-formset-tbody">
       {% for inline_form in form %}
-        {% if form_show_errors and inline_form.non_field_errors and not inline_form.is_extra %}
-          <div class="alert alert-block alert-danger">
-            {% if form_error_title %}<h4 class="alert-heading">{{ form_error_title }}</h4>{% endif %}
-            <ul>
-              {{ form.non_field_errors|unordered_list }}
-            </ul>
-          </div>
-        {% endif %}
-
-        <tr>
+        <tr class="{% if inline_form.non_field_errors %}danger{% endif %}">
           <td class="table-row-counter">{{ forloop.counter }}</td>
-          {% if inline_form.has_designator %}<td class="table-row-designator">{{ inline_form.designator }}</td>{% endif %}
+          {% if inline_form.has_designator %}<td class="table-row-designator">{{ inline_form.designator|format_designator }}</td>{% endif %}
           {% for field in inline_form %}
             {% if field.is_hidden %}
               {{ field }}
@@ -53,6 +58,13 @@
             {% endif %}
           {% endfor %}
         </tr>
+        {% if inline_form.non_field_errors and not inline_form.is_extra %}
+          <td class="has-error" colspan="4">
+            {% for error in inline_form.non_field_errors %}
+              <span class="help-block field-error"><strong>{{ error }}</strong></span>
+            {% endfor %}
+          </td>
+        {% endif %}
       {% endfor %}
       </tbody>
     </table>

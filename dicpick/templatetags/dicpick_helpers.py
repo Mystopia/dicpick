@@ -4,12 +4,41 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
+import datetime
+
 from django import template
 from django.forms import BaseForm
 from django.utils.html import conditional_escape
 from django.utils.safestring import mark_safe
 
 register = template.Library()
+
+
+@register.filter('any')
+def any_(iterable):
+  return any(iterable)
+
+@register.filter
+def date_to_slug(date):
+  return date.strftime('%Y_%m_%d')
+
+
+@register.filter
+def date_to_pretty_str(date):
+  return date.strftime('%d %b %Y')
+
+
+@register.filter
+def date_to_short_str(date):
+  return date.strftime('%m/%d')
+
+
+@register.filter
+def format_designator(v):
+  if isinstance(v, datetime.date):
+    return date_to_short_str(v)
+  else:
+    return v
 
 
 @register.filter
