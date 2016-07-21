@@ -68,11 +68,6 @@ class CampDetail(IsCampAdminMixin, DetailView):
   slug_url_kwarg = 'camp_slug'
   context_object_name = 'camp'
 
-  def get_context_data(self, **kwargs):
-    data = super(CampDetail, self).get_context_data(**kwargs)
-    data['language_code'] = self.request.LANGUAGE_CODE
-    return data
-
 
 # Event views.
 

@@ -3,7 +3,6 @@
 
 {% block content %}
   <h2>Events for {{ camp.name }}</h2>
-  XXXXXX {{ language_code }} YYYYY
   <a href="{% url 'dicpick:event_create' camp.slug %}">New Event</a>
   <ul>
     {% for event in camp.events.all %}
