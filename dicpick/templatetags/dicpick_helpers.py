@@ -23,14 +23,29 @@ def date_to_slug(date):
   return date.strftime('%Y_%m_%d')
 
 
+# The dates of the burn for the next few years.  Update this before 2020.
+burns = {datetime.date(2016, 9, 3), datetime.date(2017, 9, 2), datetime.date(2018, 9, 1),
+         datetime.date(2019, 8, 31), datetime.date(2020, 9, 5)}
+
+
+burn_logo = ")'("
+
+
+@register.filter
+def is_burn(date):
+  return date in burns
+
 @register.filter
 def date_to_pretty_str(date):
-  return date.strftime('%d %b %Y')
+  return date.strftime('%A, %B %d %Y')
 
 
 @register.filter
 def date_to_short_str(date):
-  return date.strftime('%m/%d')
+  ret = date.strftime('%a %m/%d')
+  if is_burn(date):
+    ret = '{} {}'.format(burn_logo, ret)
+  return ret
 
 
 @register.filter

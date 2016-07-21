@@ -40,6 +40,18 @@ form.formset .control-label {
     text-align: left;
 }
 
+.tasks-by-date-link {
+    font-size: larger;
+    font-weight: bold;
+    padding: 4px;
+}
+
+.burn-logo {
+    font-size: larger;
+    font-weight: bold;
+    padding: 4px;
+}
+
 /* Prevent the select options from being temporarily visible before select2 initializes. */
 .with-select2 select {
     display: none;

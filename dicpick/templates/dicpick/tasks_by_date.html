@@ -5,8 +5,17 @@
 
 {% block content %}
   <legend>Assign {% trans 'Tasks' %} By Date</legend>
-  {% for date in event.date_range %}
-    <h4><a href="{% url 'dicpick:tasks_by_date_update' event.camp.slug event.slug date|date_to_slug %}">{{ date|date_to_pretty_str }}</a></h4>
-  {% endfor %}
+  <table class="tasks-by-date-link-table">
+    {% for date in event.date_range %}
+      <tr>
+        <td class="burn-logo">
+          {% if date|is_burn %})'({% endif %}
+        </td>
+        <td class="tasks-by-date-link">
+          <a href="{% url 'dicpick:tasks_by_date_update' event.camp.slug event.slug date|date_to_slug %}">{{ date|date_to_pretty_str }}</a>
+        </td>
+      </tr>
+    {% endfor %}
+  </table>
 {% endblock content %}
 

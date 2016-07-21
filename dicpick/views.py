@@ -28,6 +28,7 @@ from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
                            InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices)
 from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag
+from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
 from dicpick.util import create_user
 
 
@@ -373,7 +374,7 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
 class TasksByDateUpdate(InlineTaskFormsetUpdate):
   @property
   def legend(self):
-    return 'Edit {} on {}'.format(_('Tasks'), self.date)
+    return 'Edit {} on {} {}'.format(_('Tasks'), burn_logo if is_burn(self.date) else '', date_to_pretty_str(self.date))
 
   @property
   def date(self):
