@@ -49,7 +49,8 @@ def date_to_short_str(date):
 
 
 @register.filter
-def format_designator(v):
+def format_designator(form):
+  v = form.designator()
   if isinstance(v, datetime.date):
     return date_to_short_str(v)
   else:

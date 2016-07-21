@@ -8,12 +8,14 @@ import re
 
 import requests
 from django.contrib.auth.models import User
+from django.core.urlresolvers import reverse
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
                           ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError, FileInput)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 
 from dicpick.models import Event, Participant, Tag, Task, TaskType
+from dicpick.templatetags.dicpick_helpers import date_to_slug
 from dicpick.util import create_user
 
 
@@ -31,6 +33,12 @@ class DicPickModelForm(ModelForm):
 
   def designator(self):
     return getattr(self.instance, self.Meta.designator_field)
+
+  def has_designator_link(self):
+    return self.designator_link() is not None
+
+  def designator_link(self):
+    return None
 
 
 class EventForm(DicPickModelForm):
@@ -135,11 +143,19 @@ class TaskByTypeForm(TaskFormBase):
     fields = list(TaskFormBase.Meta.fields)
     designator_field = 'date'
 
+  def designator_link(self):
+    event = self.instance.task_type.event
+    return reverse('dicpick:tasks_by_date_update', args=[event.camp.slug, event.slug, date_to_slug(self.instance.date)])
+
 
 class TaskByDateForm(TaskFormBase):
   class Meta(TaskFormBase.Meta):
     fields = list(TaskFormBase.Meta.fields)
     designator_field = 'task_type'
+
+  def designator_link(self):
+    event = self.instance.task_type.event
+    return reverse('dicpick:tasks_by_type_update', args=[event.camp.slug, event.slug, self.instance.task_type_id])
 
 
 class UserWidget(MultiWidget):

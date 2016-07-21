@@ -44,7 +44,13 @@
       {% for inline_form in form %}
         <tr class="{% if inline_form.non_field_errors %}danger{% endif %}">
           <td class="table-row-counter">{{ forloop.counter }}</td>
-          {% if inline_form.has_designator %}<td class="table-row-designator">{{ inline_form.designator|format_designator }}</td>{% endif %}
+          {% if inline_form.has_designator %}
+            <td class="table-row-designator">
+              {% if inline_form.has_designator_link %}<a href="{{ inline_form.designator_link }}">{% endif %}
+                {{ inline_form|format_designator }}
+              {% if inline_form.has_designator_link %}</a>{% endif %}
+            </td>
+          {% endif %}
           {% for field in inline_form %}
             {% if field.is_hidden %}
               {{ field }}
