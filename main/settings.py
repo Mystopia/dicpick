@@ -109,7 +109,7 @@ ROOT_URLCONF = 'main.urls'
 WSGI_APPLICATION = 'main.wsgi.application'
 
 
-LANGUAGE_CODE = 'de'
+LANGUAGE_CODE = 'en'
 TIME_ZONE = 'UTC'
 USE_I18N = True
 USE_L10N = False
