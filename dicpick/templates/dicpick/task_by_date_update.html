@@ -1,0 +1,13 @@
+{# Copyright 2016 Mystopia. #}
+{% extends 'dicpick/task_formset.html' %}
+{% load dicpick_helpers %}
+
+{% block nav_links %}
+  <div class="date-nav-links">
+    <a href="{% url 'dicpick:tasks_by_date_update' event.camp.slug event.slug prev_date|date_to_slug %}"
+       class="date-nav-prev"><< {{ prev_date|date_to_short_str }}</a>
+    <a href="{% url 'dicpick:tasks_by_date_update' event.camp.slug event.slug next_date|date_to_slug %}"
+       class="date-nav-next">{{ next_date|date_to_short_str }} >></a>
+  </div>
+  {{ block.super }}
+{% endblock nav_links %}

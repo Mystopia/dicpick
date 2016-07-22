@@ -372,6 +372,8 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
 
 
 class TasksByDateUpdate(InlineTaskFormsetUpdate):
+  template_name = 'dicpick/task_by_date_update.html'
+
   @property
   def legend(self):
     return 'Edit {} on {} {}'.format(_('Tasks'), burn_logo if is_burn(self.date) else '', date_to_pretty_str(self.date))
@@ -395,6 +397,13 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
     )
     kwargs['event'] = self.event
     return kwargs
+
+  def get_context_data(self, **kwargs):
+    data = super(TasksByDateUpdate, self).get_context_data(**kwargs)
+    day = datetime.timedelta(days=1)
+    data['prev_date'] = self.date - day
+    data['next_date'] = self.date + day
+    return data
 
 
 class TagAutocomplete(EventRelatedMixin, View):

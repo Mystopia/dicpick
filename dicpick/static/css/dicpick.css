@@ -52,6 +52,18 @@ form.formset .control-label {
     padding: 4px;
 }
 
+.date-nav-links {
+    width: 400px;
+}
+
+.date-nav-links .data-nav-prev {
+    float: left;
+}
+
+.date-nav-links .date-nav-next {
+    float: right;
+}
+
 /* Prevent the select options from being temporarily visible before select2 initializes. */
 .with-select2 select {
     display: none;
