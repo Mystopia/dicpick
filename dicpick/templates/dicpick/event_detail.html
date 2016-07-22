@@ -18,6 +18,7 @@
         <h4><a href="{% url 'dicpick:task_types_update' event.camp.slug event.slug %}">Edit {% trans 'Task' %} Types</a></h4>
         <h4><a href="{% url 'dicpick:tasks_by_type' event.camp.slug event.slug %}">Assign {% trans 'Tasks' %} By Type</a></h4>
         <h4><a href="{% url 'dicpick:tasks_by_date' event.camp.slug event.slug %}">Assign {% trans 'Tasks' %} By Date</a></h4>
+        <h4><a href="{% url 'dicpick:all_tasks' event.camp.slug event.slug %}">All {% trans 'Task' %} Assignments</a></h4>
       </td>
       <td class="event-stats-summary-container">
         <table class="table event-stats-summary">

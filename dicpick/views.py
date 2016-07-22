@@ -7,11 +7,11 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 import datetime
 import json
 import textwrap
+from collections import defaultdict
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
@@ -22,7 +22,7 @@ from django.utils.functional import cached_property
 from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
-from dicpick.assign import assign_for_task_ids, NoEligibleParticipant
+from dicpick.assign import assign_for_task_ids
 from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
@@ -404,6 +404,29 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
     data['prev_date'] = self.date - day
     data['next_date'] = self.date + day
     return data
+
+
+class AllTasks(EventRelatedTemplateMixin, TemplateView):
+  template_name = 'dicpick/all_tasks.html'
+
+  @classmethod
+  def prefetch_related(cls):
+    return ['task_types', 'task_types__tasks', 'task_types__tasks__assignees', 'task_types__tasks__assignees__user']
+
+  def get_context_data(self, **kwargs):
+    data = super(AllTasks, self).get_context_data(**kwargs)
+
+    # We put all the task assignees into a dict, so that the template doesn't have to assume anything
+    # about which task types and dates we have data for, what order we see them in, etc.
+    assignees = defaultdict(lambda: defaultdict(list))
+
+    for task_type in self.event.task_types.all():
+      for task in task_type.tasks.all():
+        assignees[task_type.id][task.date] = task.assignees.all()
+
+    data['assignees'] = assignees
+    return data
+
 
 
 class TagAutocomplete(EventRelatedMixin, View):

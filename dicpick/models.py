@@ -11,6 +11,8 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import Sum, F
 from django.utils.functional import cached_property
+from django.utils.html import escape
+from django.utils.safestring import mark_safe
 
 
 class Camp(models.Model):
@@ -138,6 +140,9 @@ class Participant(ModelWithDateRange):
   @cached_property
   def assigned_score(self):
     return self.initial_score + sum(t.score for t in self.tasks.all())
+
+  def short_name(self):
+    return '{} {}.'.format(self.user.first_name.split()[0], self.user.last_name[:1])
 
   def __str__(self):
     return self.user.get_full_name()

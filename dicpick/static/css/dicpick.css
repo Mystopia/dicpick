@@ -171,6 +171,14 @@ form.formset .control-label {
     font-weight: bold;
 }
 
+td.task-type-name-col {
+    width: 300px;
+}
+
+/*.table-all-tasks {*/
+    /*border: 1px solid black;*/
+/*}*/
+
 .assignee-option.disqualified-for-date::after {
     font-family: 'Glyphicons Halflings';
     content: "   \e109";

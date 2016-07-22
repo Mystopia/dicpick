@@ -32,4 +32,6 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_type/(?P<task_type_pk>\d+)$', views.TasksByTypeUpdate.as_view(), name='tasks_by_type_update'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/$', views.TasksByDate.as_view(), name='tasks_by_date'),
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/(?P<date>\w+)$', views.TasksByDateUpdate.as_view(), name='tasks_by_date_update'),
+
+  url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks/all$', views.AllTasks.as_view(), name='all_tasks'),
 ]

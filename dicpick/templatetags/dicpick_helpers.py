@@ -35,6 +35,7 @@ burn_logo = ")'("
 def is_burn(date):
   return date in burns
 
+
 @register.filter
 def date_to_pretty_str(date):
   return date.strftime('%A, %B %d %Y')
@@ -46,6 +47,11 @@ def date_to_short_str(date):
   if is_burn(date):
     ret = '{} {}'.format(burn_logo, ret)
   return ret
+
+
+@register.filter
+def date_to_shortest_str(date):
+  return date.strftime('%m/%d')
 
 
 @register.filter
@@ -95,6 +101,20 @@ def lightweight_formatting(text, autoescape=True):
   codified += newlines(blocks[-1])
 
   return mark_safe(codified)
+
+
+@register.filter(needs_autoescape=True)
+def nbspify(text, autoescape=True):
+  if autoescape:
+    esc = conditional_escape
+  else:
+    esc = lambda x: x
+  return mark_safe('&nbsp;'.join([esc(s) for s in text.split(' ')]))
+
+
+@register.filter
+def get_item(dictionary, key):
+  return dictionary[key]
 
 
 @register.filter
