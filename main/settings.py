@@ -102,7 +102,7 @@ AUTHENTICATION_BACKENDS = (
   'django.contrib.auth.backends.ModelBackend',
 )
 
-LOGIN_REDIRECT_URL = 'main'
+LOGIN_REDIRECT_URL = '/'
 
 ROOT_URLCONF = 'main.urls'
 
