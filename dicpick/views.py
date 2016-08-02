@@ -428,7 +428,6 @@ class AllTasks(EventRelatedTemplateMixin, TemplateView):
     return data
 
 
-
 class TagAutocomplete(EventRelatedMixin, View):
   def get(self, request, camp_slug, event_slug):
     query = request.GET.get('q') or ''

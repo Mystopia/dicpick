@@ -79,6 +79,10 @@ class TagForm(DicPickModelForm):
     fields = ['name']
     qualifier = 'tag'
 
+  def __init__(self, *args, **kwargs):
+    kwargs.pop('tags_by_id')  # Our superclass provides this. We don't need it but we must discard it anyway.
+    super(TagForm, self).__init__(*args, **kwargs)
+
 
 class TaskTypeForm(FormWithTags):
   class Meta:
@@ -264,7 +268,7 @@ class FileUploadWidget(FileInput):
   def render(self, name, value, attrs=None):
     attrs['style'] = attrs.get('style', ' ') + 'display: none;'
     return format_html("""<label class="btn btn-default btn-file">Browse {}</label><span class="file-upload-path"></span>""",
-                       super(FileInput, self).render(name, None, attrs=attrs))
+                       super(FileUploadWidget, self).render(name, None, attrs=attrs))
 
 
 class ParticipantImportForm(Form):
