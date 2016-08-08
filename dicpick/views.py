@@ -289,8 +289,8 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
 
 class TaskTypesUpdate(EventRelatedFormsetUpdate):
   form_class = EventRelatedFormsetUpdate.create_form_class(TaskTypeForm)
-  help_text = 'These are categories of tasks, each of which must be performed on ' \
-              'multiple days, possibly by multiple people.\nE.g., Morning MOOP Sweep, Dinner Sous Chef.'
+  help_text = ('These are categories of tasks, each of which must be performed on '
+               'multiple days, possibly by multiple people.\nE.g., Morning MOOP Sweep, Dinner Sous Chef.')
 
   @property
   def legend(self):

@@ -106,14 +106,6 @@ $(function() {
     });
   });
 
-  // Initialize other select boxes.
-
-  //$('select')
-  //  .not('.field-assignees')
-  //  .not('.field-do_not_assign_to')
-  //  .not('.field-do_not_assign_with')
-  //  .select2();
-
   // Initialize date fields.
 
   $('.widget-dateinput').datepicker({
@@ -132,5 +124,46 @@ $(function() {
     var input = $(this);
     var fileName = input.val().replace(/\\/g, '/').replace(/.*\//, '');
     input.parent().siblings('.file-upload-path').text(fileName);
+  });
+
+  // Initialize add more rows button.
+  $('#add-formset-form').on('click', function(e) {
+    e.preventDefault();
+    // The last real row is the one right before the row the button is in.
+    var lastRow = $(this).closest('tr').prev();
+    var newRow = lastRow.clone();
+
+    // Update visible row counter.
+    var counter = newRow.children('.table-row-counter');
+    counter.html(parseInt(counter.html()) + 1);
+
+    // Update ids and names of all form elements.
+
+    // Modifies any string containing dash-delimited numbers by incrementing each number.
+    function modify(str) {
+      if (!str) {
+        return str;
+      }
+      var newParts = [];
+      $.each(str.split('-'), function(i, idPart) {
+        var num = parseInt(idPart);
+        newParts[i] = isNaN(num) ? idPart : (num + 1).toString();
+      });
+      return newParts.join('-')
+    }
+
+    var elements = newRow.find('*');
+    elements.each(function(i, elem) {
+      $(elem).attr('id', modify($(elem).attr('id')));
+      $(elem).attr('name', modify($(elem).attr('name')));
+    });
+
+    // Update the management form.
+    $(this).closest('form').find("input[name$='TOTAL_FORMS']").each(function(i, elem) {
+      $(elem).attr('value', (parseInt($(elem).attr('value')) + 1).toString());
+    });
+
+    newRow.insertAfter(lastRow);
+    return false;
   });
 });
