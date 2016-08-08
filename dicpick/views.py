@@ -164,7 +164,7 @@ class EventRelatedFormsetUpdate(EventRelatedFormsetMixin, FormView):
   @staticmethod
   def create_form_class(single_model_form_class, formset_base_class=InlineFormsetWithTagChoices):
     return inlineformset_factory(Event, single_model_form_class.Meta.model,
-                                 form=single_model_form_class, extra=4,
+                                 form=single_model_form_class, extra=1,
                                  formset=formset_base_class)
 
   def get_form_kwargs(self):
