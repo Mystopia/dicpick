@@ -2,6 +2,20 @@
 {% extends 'dicpick/event_related_formset.html' %}
 
 {% block form_content %}
-  <input type="submit" name="assign" value="Assign" class="btn btn-primary">
+  <div>
+    <input type="submit" name="assign" value="Assign" class="btn btn-primary">
+    <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#confirm-delete-all-assignments">
+      Delete All Assignments
+    </button>
+{#    <input type="submit" name="delete-all-assignments" value="Delete All Assignments" class="btn btn-danger">#}
+    <script>
+      function deleteAllAssignments(ctx) {
+        var form = $(ctx).closest('form');
+        form.append($('<input type="hidden" name="delete-all-assignments" value="1">'));
+        form.submit();
+      }
+    </script>
+    {% include 'dicpick/modal_confirm_delete.html' with modal_id="confirm-delete-all-assignments" modal_body="Are you sure you want to delete all assignments on this form?<br><br><strong>This cannot be undone!</strong>" modal_onclick="deleteAllAssignments(this);" only %}
+  </div>
   {{ block.super }}
 {% endblock form_content %}

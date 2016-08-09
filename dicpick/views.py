@@ -319,20 +319,27 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
   template_name = 'dicpick/task_formset.html'
 
   def form_valid(self, form):
-    if form.is_valid():
-      form.save()
-    if 'assign' in self.request.POST:
-      # Weirdly, t['id'] is a full Task object, not an int.
-      # Note that we must let the assign code re-fetch the Task objects, so it can prefetch
-      # related objects, filter them etc.
-      forms_by_task_id = {t['id'].id: f for (t, f) in zip(form.cleaned_data, form.forms)}
-      unassignable_tasks = assign_for_task_ids(self.event, [t['id'].id for t in form.cleaned_data])
-      if unassignable_tasks:
-        for task_id in unassignable_tasks:
-          forms_by_task_id[task_id].add_error(None,
-                                              "Couldn't find an eligible {} to perform this {}.".format(
-                                                  _('Participant'), _('Task')))
-        return self.form_invalid(form)
+    if 'delete-all-assignments' in self.request.POST:
+      # Delete all assignees, but don't save any other form data.
+      task_ids = [t['id'].id for t in form.cleaned_data]
+      for task in Task.objects.filter(task_type__event=self.event, id__in=task_ids).prefetch_related('assignees'):
+        task.assignees.clear()
+    else:
+      if form.is_valid():
+        form.save()
+      if 'assign' in self.request.POST:
+        # Weirdly, t['id'] is a full Task object, not an int.
+        # Note that we must let the assign code re-fetch the Task objects, so it can prefetch
+        # related objects, filter them etc.
+        forms_by_task_id = {t['id'].id: f for (t, f) in zip(form.cleaned_data, form.forms)}
+        unassignable_tasks = assign_for_task_ids(self.event, [t['id'].id for t in form.cleaned_data])
+        if unassignable_tasks:
+          for task_id in unassignable_tasks:
+            forms_by_task_id[task_id].add_error(None,
+                                                "Couldn't find an eligible {} to perform this {}.".format(
+                                                    _('Participant'), _('Task')))
+          return self.form_invalid(form)
+
     return super(InlineTaskFormsetUpdate, self).form_valid(form)
 
   def get_success_url(self):

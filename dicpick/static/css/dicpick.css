@@ -23,6 +23,10 @@ code {
     padding: 4px;
 }
 
+.modal-body {
+  font-size: larger;
+}
+
 .required-field-legend {
     font-weight: bold;
     margin-bottom: 1.5em;
