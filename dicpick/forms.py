@@ -7,6 +7,7 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 import re
 
 import requests
+from django.db import transaction
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
@@ -14,7 +15,7 @@ from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileFi
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 
-from dicpick.models import Event, Participant, Tag, Task, TaskType
+from dicpick.models import Event, Participant, Tag, Task, TaskType, Assignment
 from dicpick.templatetags.dicpick_helpers import date_to_slug
 from dicpick.util import create_user
 
@@ -140,6 +141,19 @@ class TaskFormBase(FormWithTags):
 
     setup_participants_m2m_field('assignees')
     setup_participants_m2m_field('do_not_assign_to')
+
+  def save(self, commit=True):
+    # Pop off the asignees so that the super call doesn't try to save them (which it can't do because
+    # the intermediate table isn't autocreated, and it won't know how to create instances of it).
+    assignees = self.cleaned_data.pop('assignees')
+    with transaction.atomic():
+      # Save without the assignees.
+      super(TaskFormBase, self).save(commit)
+      # Manually save the assignees.
+      self.instance.assignees.clear()
+      for assignee in assignees:
+        # TODO: Bulk-create.
+        Assignment.objects.create(participant=assignee, task=self.instance, automatic=False)
 
 
 class TaskByTypeForm(TaskFormBase):

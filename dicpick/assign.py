@@ -10,7 +10,7 @@ from collections import defaultdict
 import datetime
 from django.db.models import Count, F
 
-from dicpick.models import Task
+from dicpick.models import Task, Assignment
 
 
 class NoEligibleParticipant(Exception):
@@ -122,7 +122,7 @@ def assign_for_filter(event, **task_filter):
 
         task_type_count_participants[task.task_type.id][count].remove(assign_to)
         task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-        task.assignees.add(assign_to)  # Will autosave to the db.  TODO: Batch these?
+        Assignment(participant=assign_to, task=task, automatic=True).save()  # TODO: Batch these?
         assign_to.assigned_score += task.score
     except NoEligibleParticipant:
       pass
