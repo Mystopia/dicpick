@@ -198,10 +198,17 @@ class Task(models.Model):
   tags = models.ManyToManyField(Tag, related_name='tasks', blank=True)
 
   # The participants assigned to this task.
-  assignees = models.ManyToManyField(Participant, related_name='tasks', blank=True)
+  assignees = models.ManyToManyField(Participant, through='Assignment', related_name='tasks', blank=True)
 
   # Participants that must not be assigned to this task.
   do_not_assign_to = models.ManyToManyField(Participant, related_name='unassignable_tasks', blank=True)
 
   def __str__(self):
     return '{} on {}'.format(self.task_type.name, self.date)
+
+
+class Assignment(models.Model):
+  participant = models.ForeignKey(Participant, on_delete=models.CASCADE)
+  task = models.ForeignKey(Task, on_delete=models.CASCADE)
+  # Was this auto-assigned (if not, it was manually assigned).
+  automatic = models.BooleanField()
