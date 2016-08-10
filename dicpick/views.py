@@ -246,10 +246,14 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
   help_text = textwrap.dedent("""
     Provide a file containing JSON with the following format:
     ```{
-      firstName: Jane,
-      lastName: Doe,
-      email: jane.doe@email.com
+      firstName: "Jane",
+      lastName: "Doe",
+      email: "jane.doe@email.com",
+      firstFullDay: "YYYY-MM-DD",
+      lastFullDay: "YYYY-MM-DD"
     }```
+
+    Re-importing multiple times is safe: existing users will be modified if necessary, but not deleted.
   """)
 
   @property
@@ -267,6 +271,15 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
       first_name = record['firstName'].strip()
       last_name = record['lastName'].strip()
 
+      def convert_date(key):
+        date_str = record.get(key)  # May be None (if it's null in the JSON).
+        if date_str:
+          return datetime.datetime.strptime(date_str.strip(), '%Y-%m-%d').date()
+        return None
+
+      start_date = convert_date('firstFullDay')
+      end_date = convert_date('lastFullDay')
+
       user = User.objects.filter(email=email).first()
       with transaction.atomic():
         if user:
@@ -279,10 +292,21 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
           user = create_user(email, first_name, last_name)
         user.groups.add(self.camp.member_group)
 
-        if not Participant.objects.filter(event=self.event, user=user).exists():
-          participant = Participant(event=self.event, user=user,
-                                    start_date=self.event.start_date, end_date=self.event.end_date, initial_score=0)
-          participant.save()
+        participants = list(Participant.objects.filter(event=self.event, user=user))
+        if participants:
+          # Update existing participant.
+          participant = participants[0]
+          if start_date:
+            participant.start_date = start_date
+          if end_date:
+            participant.end_date = end_date
+        else:
+          participant = Participant(event=self.event,
+                                    user=user,
+                                    start_date=start_date or self.event.start_date,
+                                    end_date=end_date or self.event.end_date,
+                                    initial_score=0)
+        participant.save()
 
     return super(ParticipantsImport, self).form_valid(form)
 
