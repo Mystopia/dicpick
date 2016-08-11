@@ -6,6 +6,7 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 
 import datetime
 import json
+import re
 import textwrap
 from collections import defaultdict
 
@@ -266,10 +267,14 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
     else:
       participant_data = form.cleaned_data['data_from_url']
 
+    invalid_name_chars_re = re.compile(r'[^A-Za-z\- ]')
+    def clean_name(s):
+      return invalid_name_chars_re.sub('', s)
+
     for record in participant_data:
       email = record['email'].strip()
-      first_name = record['firstName'].strip()
-      last_name = record['lastName'].strip()
+      first_name = clean_name(record['firstName'].strip())
+      last_name = clean_name(record['lastName'].strip())
 
       def convert_date(key):
         date_str = record.get(key)  # May be None (if it's null in the JSON).
