@@ -27,7 +27,7 @@ from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
                            InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices)
-from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag
+from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
 from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
 from dicpick.util import create_user
 
@@ -343,11 +343,16 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
   template_name = 'dicpick/task_formset.html'
 
   def form_valid(self, form):
-    if 'delete-all-assignments' in self.request.POST:
+    if 'delete-auto-assignments' in self.request.POST:
+      # Delete auto assignees, but don't save any other form data.
+      task_ids = [t['id'].id for t in form.cleaned_data]
+      # Note that we filter by event, to ensure that the current user has permission to modify these tasks.
+      Assignment.objects.filter(task__task_type__event=self.event, task_id__in=task_ids, automatic=True).delete()
+    elif 'delete-all-assignments' in self.request.POST:
       # Delete all assignees, but don't save any other form data.
       task_ids = [t['id'].id for t in form.cleaned_data]
-      for task in Task.objects.filter(task_type__event=self.event, id__in=task_ids).prefetch_related('assignees'):
-        task.assignees.clear()
+      # Note that we filter by event, to ensure that the current user has permission to modify these tasks.
+      Assignment.objects.filter(task__task_type__event=self.event, task_id__in=task_ids).delete()
     else:
       if form.is_valid():
         form.save()

@@ -43,8 +43,6 @@ def assign_from_request(event, request):
 def assign_for_task_type_and_date(event, task_type_id, dt):
   task_filter = {}
   if task_type_id is not None:
-    # Note that the event filter is important even if we have a task_type_id,
-    # to verify that the task_type does actually belong to the event.
     task_filter['task_type'] = task_type_id
   if dt is not None:
     task_filter['date'] = dt
@@ -57,6 +55,8 @@ def assign_for_task_ids(event, task_ids):
 
 
 def assign_for_filter(event, **task_filter):
+  # Note that the event filter is important even if we have a task_type_id,
+  # to verify that the task_type does actually belong to the event.
   tasks = list(
       Task.objects
         .annotate(assignee_count=Count('assignees'))
