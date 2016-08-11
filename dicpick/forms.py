@@ -152,7 +152,7 @@ class TaskFormBase(FormWithTags):
       # Manually save the assignees.
       self.instance.assignees.clear()
       for assignee in assignees:
-        # TODO: Bulk-create.
+        # TODO: Bulk-create these.
         Assignment.objects.create(participant=assignee, task=self.instance, automatic=False)
 
 

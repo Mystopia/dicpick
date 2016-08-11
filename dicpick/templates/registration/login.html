@@ -3,4 +3,8 @@
 
 {% block heading %}Login{% endblock heading %}
 
+{% block nav_links %}
+  <div><a href="{% url 'password_reset' %}">Forgot your password?</a></div>
+{% endblock %}
+
 {% block cancel_url %}/{% endblock cancel_url %}

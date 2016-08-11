@@ -122,7 +122,8 @@ def assign_for_filter(event, **task_filter):
 
         task_type_count_participants[task.task_type.id][count].remove(assign_to)
         task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-        Assignment(participant=assign_to, task=task, automatic=True).save()  # TODO: Batch these?
+        # TODO: Bulk-create these.
+        Assignment.objects.create(participant=assign_to, task=task, automatic=True)
         assign_to.assigned_score += task.score
     except NoEligibleParticipant:
       pass
