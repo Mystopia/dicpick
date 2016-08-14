@@ -4,9 +4,11 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
+import csv
 import datetime
 import json
 import re
+import StringIO
 import textwrap
 from collections import defaultdict
 
@@ -16,7 +18,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import translation
 from django.utils.functional import cached_property
@@ -29,7 +31,7 @@ from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
                            TaskInlineFormset, TaskModelFormset)
 from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
-from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
+from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo, date_to_short_str
 from dicpick.util import create_user
 
 
@@ -461,19 +463,41 @@ class AllTasks(EventRelatedTemplateMixin, TemplateView):
   def prefetch_related(cls):
     return ['task_types', 'task_types__tasks', 'task_types__tasks__assignees', 'task_types__tasks__assignees__user']
 
+  def get(self, request, emit_csv=False, *args, **kwargs):
+    if emit_csv:
+      assignments = self._get_assignments_dict()
+      dates = list(self.event.date_range())
+      data = StringIO.StringIO()
+      out = csv.writer(data)
+      out.writerow([''] + [dt.strftime('%a. %m/%d') for dt in dates])
+      for task_type in self.event.task_types.all():
+        rows = []
+        for i, dt in enumerate(dates):
+          for j, assignee in enumerate(assignments[task_type.id][dt]):
+            while len(rows) <= j:
+              rows.append([task_type.name] + [''] * len(dates))
+            rows[j][1 + i] = assignee
+        for row in rows:
+          out.writerow(row)
+      return HttpResponse(data.getvalue(), content_type='application/csv')
+    else:
+      return super(AllTasks, self).get(request, *args, **kwargs)
+
   def get_context_data(self, **kwargs):
     data = super(AllTasks, self).get_context_data(**kwargs)
+    data['assignments'] = self._get_assignments_dict()
+    return data
 
-    # We put all the task assignees into a dict, so that the template doesn't have to assume anything
+  def _get_assignments_dict(self):
+    # We put all the task assignments into a dict, so that we don't have to assume anything
     # about which task types and dates we have data for, what order we see them in, etc.
-    assignees = defaultdict(lambda: defaultdict(list))
+    assignments = defaultdict(lambda: defaultdict(list))
 
     for task_type in self.event.task_types.all():
       for task in task_type.tasks.all():
-        assignees[task_type.id][task.date] = task.assignees.all()
+        assignments[task_type.id][task.date] = list(task.assignees.all())
 
-    data['assignees'] = assignees
-    return data
+    return assignments
 
 
 class TagAutocomplete(EventRelatedMixin, View):

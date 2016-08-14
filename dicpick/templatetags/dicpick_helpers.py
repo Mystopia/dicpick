@@ -32,26 +32,26 @@ burn_logo = ")'("
 
 
 @register.filter
-def is_burn(date):
-  return date in burns
+def is_burn(dt):
+  return dt in burns
 
 
 @register.filter
-def date_to_pretty_str(date):
-  return date.strftime('%A, %B %d %Y')
+def date_to_pretty_str(dt):
+  return dt.strftime('%A, %B %d %Y')
 
 
 @register.filter
-def date_to_short_str(date):
-  ret = date.strftime('%a %m/%d')
-  if is_burn(date):
+def date_to_short_str(dt):
+  ret = dt.strftime('%a %m/%d')
+  if is_burn(dt):
     ret = '{} {}'.format(burn_logo, ret)
   return ret
 
 
 @register.filter
-def date_to_shortest_str(date):
-  return date.strftime('%m/%d')
+def date_to_shortest_str(dt):
+  return dt.strftime('%m/%d')
 
 
 @register.filter

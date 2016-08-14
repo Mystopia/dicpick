@@ -6,6 +6,7 @@
 
 {% block content %}
   <legend>All {% trans 'Task' %} Assignments</legend>
+  <h5><a href="{% url 'dicpick:all_tasks_csv' event.camp.slug event.slug %}">Download as CSV</a></h5>
   <table class="table table-striped table-bordered table-all-tasks">
     <thead>
     <tr>
@@ -20,7 +21,7 @@
     <td class="task-type-name-col">{{ task_type.name|nbspify }}</td>
     {% for date in event.date_range %}
       <td>
-      {% for assignee in assignees|get_item:task_type.id|get_item:date %}
+      {% for assignee in assignments|get_item:task_type.id|get_item:date %}
         {{ assignee.short_name|nbspify }}
       {% endfor  %}
       </td>

@@ -34,4 +34,5 @@ urlpatterns = [
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks_by_date/(?P<date>\w+)$', views.TasksByDateUpdate.as_view(), name='tasks_by_date_update'),
 
   url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks/all$', views.AllTasks.as_view(), name='all_tasks'),
+  url(r'^(?P<camp_slug>\w+)/(?P<event_slug>\w+)/tasks/all.csv$', views.AllTasks.as_view(), {'emit_csv': True}, name='all_tasks_csv'),
 ]
