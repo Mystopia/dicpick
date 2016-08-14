@@ -356,7 +356,7 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
         .select_related('task_type', 'task_type__event', 'task_type__event__camp')
         .prefetch_related('tags', 'assignment_set',
                           'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
-        .order_by('task_type__name')
+        .order_by(self.queryset_order_by())
     )
     return kwargs
 
@@ -414,6 +414,10 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
   def queryset_filter(self):
     return {'task_type': self.task_type}
 
+  @staticmethod
+  def queryset_order_by():
+    return 'date'
+
   def get_form_kwargs(self):
     kwargs = super(TasksByTypeUpdate, self).get_form_kwargs()
     kwargs['instance'] = self.task_type
@@ -437,6 +441,10 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
 
   def queryset_filter(self):
     return {'date': self.date}
+
+  @staticmethod
+  def queryset_order_by():
+    return 'task_type__name'
 
   def get_context_data(self, **kwargs):
     data = super(TasksByDateUpdate, self).get_context_data(**kwargs)

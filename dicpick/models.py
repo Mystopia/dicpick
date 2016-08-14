@@ -11,8 +11,6 @@ from django.core.urlresolvers import reverse
 from django.db import models
 from django.db.models import Sum, F
 from django.utils.functional import cached_property
-from django.utils.html import escape
-from django.utils.safestring import mark_safe
 
 
 class Camp(models.Model):
@@ -144,6 +142,16 @@ class Participant(ModelWithDateRange):
   def short_name(self):
     return '{} {}.'.format(self.user.first_name.split()[0], self.user.last_name[:1])
 
+  # Cached querysets, so they aren't re-created (and therefore re-evaluated) on every call.
+
+  @cached_property
+  def cached_tags(self):
+    return self.tags.all()
+
+  @cached_property
+  def cached_do_not_assign_with(self):
+    return self.do_not_assign_with.all()
+
   def __str__(self):
     return self.user.get_full_name()
 
@@ -168,6 +176,12 @@ class TaskType(ModelWithDateRange):
 
   # Tasks of this type can only be assigned to participants with at least one of these tags, by default.
   tags = models.ManyToManyField(Tag, related_name='task_types', blank=True)
+
+  # Cached querysets, so they aren't re-created (and therefore re-evaluated) on every call.
+
+  @cached_property
+  def cached_tags(self):
+    return self.tags.all()
 
   def __str__(self):
     return self.name
@@ -202,6 +216,20 @@ class Task(models.Model):
 
   # Participants that must not be assigned to this task.
   do_not_assign_to = models.ManyToManyField(Participant, related_name='unassignable_tasks', blank=True)
+
+  # Cached querysets, so they aren't re-created (and therefore re-evaluated) on every call.
+
+  @cached_property
+  def cached_tags(self):
+    return self.tags.all()
+
+  @cached_property
+  def cached_assignees(self):
+    return self.assignees.all()
+
+  @cached_property
+  def cached_do_not_assign_to(self):
+    return self.do_not_assign_to.all()
 
   def __str__(self):
     return '{} on {}'.format(self.task_type.name, self.date)
