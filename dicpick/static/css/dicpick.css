@@ -91,7 +91,7 @@ form.formset .control-label {
 }
 
 .participant-scores-table-container {
-    width: 250px;
+    width: 600px;
 }
 
 .participant-table-container {
@@ -177,6 +177,10 @@ form.formset .control-label {
 
 td.task-type-name-col {
     width: 300px;
+}
+
+.score {
+  font-weight: bold;
 }
 
 .assignment-manual {

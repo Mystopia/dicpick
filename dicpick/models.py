@@ -69,7 +69,8 @@ class Event(ModelWithDateRange):
   slug = models.SlugField(max_length=10, db_index=True, help_text='A short string to use in URLs.  E.g., "2016".')
 
   def participants_sorted_by_score(self):
-    return sorted(self.participants.all(), key=lambda p: p.assigned_score, reverse=True)
+    return sorted(self.participants.all().prefetch_related('user', 'tasks', 'tasks__task_type'),
+                  key=lambda p: p.assigned_score, reverse=True)
 
   @cached_property
   def total_score(self):
@@ -165,6 +166,10 @@ class TaskType(ModelWithDateRange):
 
   # Human-readable name of the task type.
   name = models.CharField(max_length=40)
+
+  # The task takes place between these times each day.
+  # start_time = models.TimeField()
+  # end_time = models.TimeField()
 
   # These can be overridden for individual task instances of this type:
 

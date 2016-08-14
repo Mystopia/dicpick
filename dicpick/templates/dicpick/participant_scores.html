@@ -1,6 +1,7 @@
 {# Copyright 2016 Mystopia. #}
 {% extends 'dicpick/event_related_detail.html' %}
 {% load i18n %}
+{% load dicpick_helpers %}
 
 {% block content %}
   <legend>{% trans 'Participant' %} Scores</legend>
@@ -10,12 +11,21 @@
       <tr>
         <th>Points</th>
         <th>{% trans 'Participant' %}</th>
+        <th>{% trans 'Tasks' %}</th>
       </tr>
       </thead>
       {% for participant in event.participants_sorted_by_score %}
         <tr>
-          <td>{{ participant.assigned_score }}</td>
+          <td class="score">{{ participant.assigned_score }}</td>
           <td>{{ participant }}</td>
+          <td>
+            {% if participant.initial_score %}
+              <span class="score">{{ participant.initial_score }}</span> Initial score
+            {% endif %}
+            {% for task in participant.tasks.all %}
+              <span class="score">{{ task.score }}</span> {{ task.task_type.name }} on {{ task.date|date_to_short_str }}<br>
+            {% endfor %}
+          </td>
         </tr>
       {% endfor %}
     </table>
