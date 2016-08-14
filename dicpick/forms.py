@@ -204,14 +204,15 @@ class TaskFormBase(FormWithTags):
       # Manually save the assignees.
       existing_assignments = set(self.instance.assignment_set.all())
       self.instance.assignees.clear()
+      to_create = []
       for assignee in assignees:
-        # TODO: Bulk-create these.
         automatic = False
         for ea in existing_assignments:
           if ea.participant == assignee and ea.task == self.instance:
             automatic = ea.automatic
             break
-        Assignment.objects.create(participant=assignee, task=self.instance, automatic=automatic)
+        to_create.append(Assignment(participant=assignee, task=self.instance, automatic=automatic))
+      Assignment.objects.bulk_create(to_create)
 
 
 class TaskByTypeForm(TaskFormBase):

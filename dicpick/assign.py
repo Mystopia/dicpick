@@ -62,7 +62,7 @@ def assign_for_filter(event, **task_filter):
         .annotate(assignee_count=Count('assignees'))
         .filter(assignee_count__lt=F('num_people'), task_type__event=event, **task_filter)
         .select_related('task_type')
-        .prefetch_related('tags', 'assignees', 'assignees__do_not_assign_with')
+        .prefetch_related('tags', 'assignees', 'assignees__do_not_assign_with', 'do_not_assign_to')
         .order_by()  # Clear the default ordering to avoid superfluous grouping.
   )
   participants = list(
@@ -105,6 +105,7 @@ def assign_for_filter(event, **task_filter):
     task_type_count_participants[task_type_id][count].add(participants_by_id[participant_id])
 
   unassignable_tasks = set()
+  to_create = []
   for task in tasks:
     try:
       for i in range(task.cached_assignees.count(), task.num_people):
@@ -122,10 +123,10 @@ def assign_for_filter(event, **task_filter):
 
         task_type_count_participants[task.task_type.id][count].remove(assign_to)
         task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-        # TODO: Bulk-create these.
-        Assignment.objects.create(participant=assign_to, task=task, automatic=True)
+        to_create.append(Assignment(participant=assign_to, task=task, automatic=True))
         assign_to.assigned_score += task.score
     except NoEligibleParticipant:
       pass
 
+  Assignment.objects.bulk_create(to_create)
   return unassignable_tasks
