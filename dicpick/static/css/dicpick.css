@@ -179,9 +179,13 @@ td.task-type-name-col {
     width: 300px;
 }
 
-/*.table-all-tasks {*/
-    /*border: 1px solid black;*/
-/*}*/
+.assignment-manual {
+  background-color: #f2dede !important;
+}
+
+.assignment-automatic {
+  background-color: #fcf8e3 !important;
+}
 
 .assignee-option.disqualified-for-date::after {
     font-family: 'Glyphicons Halflings';

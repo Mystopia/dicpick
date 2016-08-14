@@ -11,7 +11,8 @@ from django.db import transaction
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
-                          ModelForm, MultiValueField, MultiWidget, TextInput, URLField, ValidationError, FileInput)
+                          ModelForm, MultiValueField, MultiWidget, SelectMultiple, TextInput, URLField,
+                          ValidationError, FileInput, ModelMultipleChoiceField)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 
@@ -103,6 +104,42 @@ class TaskTypeForm(FormWithTags):
       'tags': 'Only people with at least one of these tags can be assigned tasks of this type'
     }
 
+
+class AssigneesSelect(SelectMultiple):
+  def render_option(self, selected_choices, option_value, option_label):
+    ret = super(AssigneesSelect, self).render_option(selected_choices, option_value, option_label)
+    # Note that the task's assignment_set is prefetched, but we can't filter on it directly as that
+    # would create a new queryset and database query.
+    assignment = [a for a in self.task.assignment_set.all() if a.participant_id == option_value][0]
+    cls = 'assignment-automatic' if assignment.automatic else 'assignment-manual'
+    # Assumes that ret starts with '<option '.
+    return '<option class="{}" {}'.format(cls, ret[8:])
+
+
+class ParticipantMultipleChoiceField(ModelMultipleChoiceField):
+  participants_by_id = None  # Set by the form on creation.
+
+  def clean(self, value):
+    if self.required and not value:
+      raise ValidationError(self.error_messages['required'], code='required')
+    elif not self.required and not value:
+      return self.queryset.none()
+    if not isinstance(value, (list, tuple)):
+      raise ValidationError(self.error_messages['list'], code='list')
+    ret = []
+    for pk in value:
+      try:
+        ret.append(self.participants_by_id[int(pk)])
+      except KeyError:
+        raise ValidationError(
+            self.error_messages['invalid_pk_value'],
+            code='invalid_pk_value',
+            params={'pk': pk},
+        )
+    self.run_validators(value)
+    return ret
+
+
 class TaskFormBase(FormWithTags):
   class Meta:
     model = Task
@@ -113,14 +150,21 @@ class TaskFormBase(FormWithTags):
       'num_people': '# people',
       'assignees': 'Assigned to',
       'score': 'Points',
-      'do_not_assign_to': 'Unassignable'
+      'do_not_assign_to': 'Unassignable',
+    }
+    field_classes = {
+      'assignees': ParticipantMultipleChoiceField,
+      'do_not_assign_to': ParticipantMultipleChoiceField,
+    }
+    widgets = {
+      'assignees': AssigneesSelect,
     }
     help_texts = {
       'num_people': 'Number of people needed to perform this task on this day',
       'assignees': 'People currently assigned to this task',
       'score': 'Points each person performing this task on this day earns for doing so',
       'tags': 'Only people with at least one of these tags can be assigned this task on this day',
-      'do_not_assign_to': 'These people cannot be assigned to this task'
+      'do_not_assign_to': 'These people cannot be assigned to this task',
     }
     designator_field = None
 
@@ -136,8 +180,10 @@ class TaskFormBase(FormWithTags):
       # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
       field.choices = [(field.prepare_value(participants_by_id[x]), field.label_from_instance(participants_by_id[x]))
                        for x in self.initial.get(field_name, [])]
+      field.participants_by_id = participants_by_id
       field.widget.attrs['dp-for-date'] = self.instance.date
       field.widget.attrs['dp-for-tags'] = '|'.join([t.name for t in self.instance.tags.all()])
+      field.widget.task = self.instance
 
     setup_participants_m2m_field('assignees')
     setup_participants_m2m_field('do_not_assign_to')
@@ -150,10 +196,16 @@ class TaskFormBase(FormWithTags):
       # Save without the assignees.
       super(TaskFormBase, self).save(commit)
       # Manually save the assignees.
+      existing_assignments = set(self.instance.assignment_set.all())
       self.instance.assignees.clear()
       for assignee in assignees:
         # TODO: Bulk-create these.
-        Assignment.objects.create(participant=assignee, task=self.instance, automatic=False)
+        automatic = False
+        for ea in existing_assignments:
+          if ea.participant == assignee and ea.task == self.instance:
+            automatic = ea.automatic
+            break
+        Assignment.objects.create(participant=assignee, task=self.instance, automatic=automatic)
 
 
 class TaskByTypeForm(TaskFormBase):
@@ -346,6 +398,12 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
     kwargs['users_by_id'] = self._users_by_id
     return kwargs
 
+  def participant_id_to_python(self, pk):
+    try:
+      return self._participants_by_id[int(pk)]
+    except KeyError:
+      raise ValidationError('Invalid choice')
+
 
 class InlineFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMixin, BaseInlineFormSet):
   """InlineFormset base with hacks to pass the sets of tag and participant choices into each form.
@@ -363,12 +421,20 @@ class ModelFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMi
   pass
 
 
+class InlineTaskFormset(InlineFormsetWithTagAndParticipantChoices):
+  def __init__(self, *args, **kwargs):
+    task_type = kwargs.get('instance')
+    super(InlineTaskFormset, self).__init__(*args, **kwargs)
+    self._tasks_by_id = {t.id: t for t in task_type.tasks.all()}
+
+  def add_fields(self, form, index):
+    super(InlineTaskFormset, self).add_fields(form, index)
+    form.fields['assignees'].to_python = self.participant_id_to_python
+    form.fields['do_not_assign_to'].to_python = self.participant_id_to_python
+    form.fields['id'].to_python = lambda pk: self._tasks_by_id[int(pk)]
+
+
 class ParticipantInlineFormset(InlineFormsetWithTagAndParticipantChoices):
   def add_fields(self, form, index):
     super(ParticipantInlineFormset, self).add_fields(form, index)
-    def participant_id_to_python(pk):
-      try:
-        return self._participants_by_id[int(pk)]
-      except KeyError:
-        raise ValidationError('Invalid choice')
-    form.fields['id'].to_python = participant_id_to_python
+    form.fields['id'].to_python = self.participant_id_to_python

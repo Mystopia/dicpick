@@ -33,6 +33,10 @@ $(function() {
                   (item.tooltip ? ('data-toggle="tooltip" title="' + item.tooltip + '"') : '') +
                '>' + item.text + '</div>';
       },
+      templateSelection: function(item, container) {
+        $(container).addClass(item.element.className || 'assignment-manual');
+        return item.text;
+      },
       minimumInputLength: 2,
       maximumSelectionLength: numPeople
     });

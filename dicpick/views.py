@@ -27,7 +27,8 @@ from dicpick.assign import assign_for_task_ids
 from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
-                           InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices)
+                           InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices,
+                           InlineTaskFormset)
 from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
 from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
 from dicpick.util import create_user
@@ -396,7 +397,7 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
 
   def get_form_class(self):
     return inlineformset_factory(TaskType, Task, form=TaskByTypeForm, extra=0, can_delete=False,
-                                 formset=InlineFormsetWithTagAndParticipantChoices)
+                                 formset=InlineTaskFormset)
 
   def get_form_kwargs(self):
     kwargs = super(TasksByTypeUpdate, self).get_form_kwargs()
@@ -405,8 +406,9 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
     kwargs['queryset'] = (
       Task.objects
         .filter(task_type=self.task_type)
-        .select_related('task_type')
-        .prefetch_related('tags', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
+        .select_related('task_type', 'task_type__event', 'task_type__event__camp')
+        .prefetch_related('tags', 'assignment_set',
+                          'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
         .order_by('date')
     )
     return kwargs
@@ -433,7 +435,7 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
       Task.objects
         .filter(task_type__event=self.event, date=self.date)
         .select_related('task_type')
-        .prefetch_related('tags', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
+        .prefetch_related('tags', 'assignment_set', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
         .order_by('task_type__name')
     )
     kwargs['event'] = self.event
