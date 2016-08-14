@@ -252,8 +252,9 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
       firstName: "Jane",
       lastName: "Doe",
       email: "jane.doe@email.com",
+      points: 25,
       firstFullDay: "YYYY-MM-DD",
-      lastFullDay: "YYYY-MM-DD"
+      lastFullDay: "YYYY-MM-DD",
     }```
 
     Re-importing multiple times is safe: existing users will be modified if necessary, but not deleted.
@@ -286,6 +287,7 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
 
       start_date = convert_date('firstFullDay')
       end_date = convert_date('lastFullDay')
+      initial_score = int(record.get('points') or 0)
 
       user = User.objects.filter(email=email).first()
       with transaction.atomic():
@@ -307,12 +309,13 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
             participant.start_date = start_date
           if end_date:
             participant.end_date = end_date
+          participant.initial_score = initial_score
         else:
           participant = Participant(event=self.event,
                                     user=user,
                                     start_date=start_date or self.event.start_date,
                                     end_date=end_date or self.event.end_date,
-                                    initial_score=0)
+                                    initial_score=initial_score)
         participant.save()
 
     return super(ParticipantsImport, self).form_valid(form)
