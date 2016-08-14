@@ -21,6 +21,9 @@ from dicpick.templatetags.dicpick_helpers import date_to_slug
 from dicpick.util import create_user
 
 
+# Note: This file contains many hacks to work around Django's naive handling of inline formsets.
+
+
 class DicPickModelForm(ModelForm):
   def __init__(self, *args, **kwargs):
     super(DicPickModelForm, self).__init__(*args, **kwargs)
@@ -117,25 +120,28 @@ class AssigneesSelect(SelectMultiple):
 
 
 class ParticipantMultipleChoiceField(ModelMultipleChoiceField):
-  participants_by_id = None  # Set by the form on creation.
+  """A field for selecting multiple participants, with performance fixes."""
+  participants_by_id = None  # Set by the form on each instance, on creation.
 
   def clean(self, value):
+    # Copied from the superclass clean() method.
     if self.required and not value:
       raise ValidationError(self.error_messages['required'], code='required')
     elif not self.required and not value:
       return self.queryset.none()
     if not isinstance(value, (list, tuple)):
       raise ValidationError(self.error_messages['list'], code='list')
+
+    # Here the superclass creates a queryset and triggers a new db query every time.
+    # However we know we can satisfy the lookup in memory, so we do so here instead.
     ret = []
-    for pk in value:
+    for participant_id in value:
       try:
-        ret.append(self.participants_by_id[int(pk)])
+        ret.append(self.participants_by_id[int(participant_id)])
       except KeyError:
-        raise ValidationError(
-            self.error_messages['invalid_pk_value'],
-            code='invalid_pk_value',
-            params={'pk': pk},
-        )
+        raise ValidationError('Invalid participant id: {}'.format(participant_id))
+
+    # Back to the superclass clean() method's implementation.
     self.run_validators(value)
     return ret
 
@@ -365,6 +371,10 @@ class ParticipantImportForm(Form):
 
 
 class TagChoicesFormsetMixin(object):
+  """Formset mixin with hacks to pass the sets of tag choices into each form.
+
+  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
+  """
   def __init__(self, *args, **kwargs):
     event = kwargs.pop('event')
     super(TagChoicesFormsetMixin, self).__init__(*args, **kwargs)
@@ -385,6 +395,11 @@ class InlineFormsetWithTagChoices(TagChoicesFormsetMixin, BaseInlineFormSet):
 
 
 class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
+  """Formset base with hacks to pass the sets of tag and participant choices into each form.
+
+  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
+  """
+
   def __init__(self, *args, **kwargs):
     event = kwargs.get('event')  # Superclass needs this kwarg, and will pop it off before passing the kwargs up.
     super(ParticipantAndTagChoicesFormsetMixin, self).__init__(*args, **kwargs)
@@ -398,43 +413,45 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
     kwargs['users_by_id'] = self._users_by_id
     return kwargs
 
-  def participant_id_to_python(self, pk):
+  def participant_id_to_python(self, participant_id):
     try:
-      return self._participants_by_id[int(pk)]
+      return self._participants_by_id[int(participant_id)]
     except KeyError:
-      raise ValidationError('Invalid choice')
+      raise ValidationError('Invalid participant id: {}'.format(participant_id))
 
 
-class InlineFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMixin, BaseInlineFormSet):
-  """InlineFormset base with hacks to pass the sets of tag and participant choices into each form.
-
-  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
-  """
-  pass
-
-
-class ModelFormsetWithTagAndParticipantChoices(ParticipantAndTagChoicesFormsetMixin, BaseModelFormSet):
-  """Formset base with hacks to pass the sets of tag and participant choices into each form.
-
-  Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
-  """
-  pass
-
-
-class InlineTaskFormset(InlineFormsetWithTagAndParticipantChoices):
+class TaskFormsetMixin(ParticipantAndTagChoicesFormsetMixin):
   def __init__(self, *args, **kwargs):
-    task_type = kwargs.get('instance')
-    super(InlineTaskFormset, self).__init__(*args, **kwargs)
-    self._tasks_by_id = {t.id: t for t in task_type.tasks.all()}
+    queryset = kwargs.get('queryset')
+    super(TaskFormsetMixin, self).__init__(*args, **kwargs)
+    self._tasks_by_id = {t.id: t for t in queryset.all()}
+
+  def task_id_to_python(self, task_id):
+    try:
+      return self._tasks_by_id[int(task_id)]
+    except KeyError:
+      raise ValidationError('Invalid task id: {}'.format(task_id))
 
   def add_fields(self, form, index):
-    super(InlineTaskFormset, self).add_fields(form, index)
+    super(TaskFormsetMixin, self).add_fields(form, index)
+    # The naive to_python queries the database each time.  But we know we've already fetched
+    # these for all possible ids, so we simply look them up in memory.
     form.fields['assignees'].to_python = self.participant_id_to_python
     form.fields['do_not_assign_to'].to_python = self.participant_id_to_python
-    form.fields['id'].to_python = lambda pk: self._tasks_by_id[int(pk)]
+    form.fields['id'].to_python = self.task_id_to_python
 
 
-class ParticipantInlineFormset(InlineFormsetWithTagAndParticipantChoices):
+class TaskInlineFormset(TaskFormsetMixin, BaseInlineFormSet):
+  pass
+
+
+class TaskModelFormset(TaskFormsetMixin, BaseModelFormSet):
+  pass
+
+
+class ParticipantInlineFormset(ParticipantAndTagChoicesFormsetMixin, BaseInlineFormSet):
   def add_fields(self, form, index):
     super(ParticipantInlineFormset, self).add_fields(form, index)
+    # The naive to_python queries the database each time.  But we know we've already fetched
+    # these for all possible ids, so we simply look them up in memory.
     form.fields['id'].to_python = self.participant_id_to_python

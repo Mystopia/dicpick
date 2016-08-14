@@ -27,8 +27,7 @@ from dicpick.assign import assign_for_task_ids
 from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
-                           InlineFormsetWithTagAndParticipantChoices, ModelFormsetWithTagAndParticipantChoices,
-                           InlineTaskFormset)
+                           TaskInlineFormset, TaskModelFormset)
 from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
 from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
 from dicpick.util import create_user
@@ -348,6 +347,19 @@ class TasksByDate(EventRelatedTemplateMixin, TemplateView):
 class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
   template_name = 'dicpick/task_formset.html'
 
+  def get_form_kwargs(self):
+    kwargs = super(InlineTaskFormsetUpdate, self).get_form_kwargs()
+    kwargs['event'] = self.event
+    kwargs['queryset'] = (
+      Task.objects
+        .filter(task_type__event=self.event, **self.queryset_filter())
+        .select_related('task_type', 'task_type__event', 'task_type__event__camp')
+        .prefetch_related('tags', 'assignment_set',
+                          'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
+        .order_by('task_type__name')
+    )
+    return kwargs
+
   def form_valid(self, form):
     if 'delete-auto-assignments' in self.request.POST:
       # Delete auto assignees, but don't save any other form data.
@@ -397,20 +409,14 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
 
   def get_form_class(self):
     return inlineformset_factory(TaskType, Task, form=TaskByTypeForm, extra=0, can_delete=False,
-                                 formset=InlineTaskFormset)
+                                 formset=TaskInlineFormset)
+
+  def queryset_filter(self):
+    return {'task_type': self.task_type}
 
   def get_form_kwargs(self):
     kwargs = super(TasksByTypeUpdate, self).get_form_kwargs()
     kwargs['instance'] = self.task_type
-    kwargs['event'] = self.event
-    kwargs['queryset'] = (
-      Task.objects
-        .filter(task_type=self.task_type)
-        .select_related('task_type', 'task_type__event', 'task_type__event__camp')
-        .prefetch_related('tags', 'assignment_set',
-                          'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
-        .order_by('date')
-    )
     return kwargs
 
 
@@ -426,20 +432,11 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
     return datetime.datetime.strptime(self.kwargs['date'], '%Y_%m_%d').date()
 
   def get_form_class(self):
-    return modelformset_factory(Task, TaskByDateForm, extra=0, can_delete=False,
-                                formset=ModelFormsetWithTagAndParticipantChoices)
+    return modelformset_factory(Task, form=TaskByDateForm, extra=0, can_delete=False,
+                                formset=TaskModelFormset)
 
-  def get_form_kwargs(self):
-    kwargs = super(TasksByDateUpdate, self).get_form_kwargs()
-    kwargs['queryset'] = (
-      Task.objects
-        .filter(task_type__event=self.event, date=self.date)
-        .select_related('task_type')
-        .prefetch_related('tags', 'assignment_set', 'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
-        .order_by('task_type__name')
-    )
-    kwargs['event'] = self.event
-    return kwargs
+  def queryset_filter(self):
+    return {'date': self.date}
 
   def get_context_data(self, **kwargs):
     data = super(TasksByDateUpdate, self).get_context_data(**kwargs)
