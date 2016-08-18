@@ -194,6 +194,15 @@ class TaskFormBase(FormWithTags):
     setup_participants_m2m_field('assignees')
     setup_participants_m2m_field('do_not_assign_to')
 
+  def clean_assignees(self):
+    assignees = self.cleaned_data.get('assignees')
+    for assignee in assignees:
+      if (self.instance.date in assignee.cached_task_dates and
+          self.instance.id not in [t.id for t in assignee.cached_tasks]):
+        raise ValidationError('{} already assigned to "{}" on this date.'.format(
+            assignee, self.instance.task_type.name))
+    return assignees
+
   def save(self, commit=True):
     # Pop off the asignees so that the super call doesn't try to save them (which it can't do because
     # the intermediate table isn't autocreated, and it won't know how to create instances of it).
@@ -404,7 +413,7 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
   def __init__(self, *args, **kwargs):
     event = kwargs.get('event')  # Superclass needs this kwarg, and will pop it off before passing the kwargs up.
     super(ParticipantAndTagChoicesFormsetMixin, self).__init__(*args, **kwargs)
-    participant_choices = Participant.objects.filter(event=event).select_related('user').all()
+    participant_choices = Participant.objects.filter(event=event).select_related('user').prefetch_related('tasks').all()
     self._participants_by_id = {p.id: p for p in participant_choices}
     self._users_by_id = {p.user_id: p.user for p in participant_choices}
 

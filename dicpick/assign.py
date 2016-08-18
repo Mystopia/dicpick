@@ -24,7 +24,7 @@ def _is_eligible(task, participant):
   if participant in task.cached_do_not_assign_to:
     return False
   for a in task.cached_assignees:
-    if participant == a or participant in a.cached_do_not_assign_with:
+    if participant == a or participant in a.cached_do_not_assign_with or task.date in participant.cached_task_dates:
       return False
 
   task_tags = set(task.cached_tags)

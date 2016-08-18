@@ -153,6 +153,14 @@ class Participant(ModelWithDateRange):
   def cached_do_not_assign_with(self):
     return self.do_not_assign_with.all()
 
+  @cached_property
+  def cached_tasks(self):
+    return self.tasks.all()
+
+  @cached_property
+  def cached_task_dates(self):
+    return set(t.date for t in self.cached_tasks)
+
   def __str__(self):
     return self.user.get_full_name()
 

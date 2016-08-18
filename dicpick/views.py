@@ -360,7 +360,8 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
         .filter(task_type__event=self.event, **self.queryset_filter())
         .select_related('task_type', 'task_type__event', 'task_type__event__camp')
         .prefetch_related('tags', 'assignment_set',
-                          'assignees', 'assignees__user', 'do_not_assign_to', 'do_not_assign_to__user')
+                          'assignees', 'assignees__user', 'assignees__tasks',
+                          'do_not_assign_to', 'do_not_assign_to__user')
         .order_by(self.queryset_order_by())
     )
     return kwargs
