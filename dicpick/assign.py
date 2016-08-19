@@ -20,19 +20,6 @@ class NoEligibleParticipant(Exception):
     self.task = task
 
 
-def _is_eligible(task, participant):
-  if participant in task.cached_do_not_assign_to:
-    return False
-  for a in task.cached_assignees:
-    if participant == a or participant in a.cached_do_not_assign_with:
-      return False
-
-  task_tags = set(task.cached_tags)
-  return (participant.is_in_date_range(task.date) and
-          task.date not in participant.cached_task_dates and
-          (not task_tags or task_tags.intersection(participant.cached_tags)))
-
-
 def assign_from_request(event, request):
   task_type_str = request.POST.get('task_type')
   date_str = request.POST.get('date')
@@ -73,13 +60,27 @@ def assign_for_filter(event, **task_filter):
         .all()
   )
 
+  participants_by_id = {p.id: p for p in participants}
+
+  participant_busy_dates_by_id = {p.id: p.cached_task_dates for p in participants}
+
+  def _is_eligible(task, participant):
+    if participant in task.cached_do_not_assign_to:
+      return False
+    for a in task.cached_assignees:
+      if participant == a or participant in a.cached_do_not_assign_with:
+        return False
+
+    task_tags = set(task.cached_tags)
+    return (participant.is_in_date_range(task.date) and
+            task.date not in participant_busy_dates_by_id[participant.id] and
+            (not task_tags or task_tags.intersection(participant.cached_tags)))
+
   # All task_types we're dealing with.
   task_types = set()
 
   for task in tasks:
     task_types.add(task.task_type)
-
-  participants_by_id = dict((p.id, p) for p in participants)
 
   participant_task_type_counts = (
     event.participants
@@ -126,6 +127,7 @@ def assign_for_filter(event, **task_filter):
         task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
         to_create.append(Assignment(participant=assign_to, task=task, automatic=True))
         assign_to.assigned_score += task.score
+        participant_busy_dates_by_id[assign_to.id].add(task.date)
     except NoEligibleParticipant:
       pass
 
