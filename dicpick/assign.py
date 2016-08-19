@@ -24,11 +24,12 @@ def _is_eligible(task, participant):
   if participant in task.cached_do_not_assign_to:
     return False
   for a in task.cached_assignees:
-    if participant == a or participant in a.cached_do_not_assign_with or task.date in participant.cached_task_dates:
+    if participant == a or participant in a.cached_do_not_assign_with:
       return False
 
   task_tags = set(task.cached_tags)
   return (participant.is_in_date_range(task.date) and
+          task.date not in participant.cached_task_dates and
           (not task_tags or task_tags.intersection(participant.cached_tags)))
 
 

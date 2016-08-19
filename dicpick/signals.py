@@ -21,7 +21,7 @@ def create_task_instances(sender, instance, **kwargs):
   for missing_date in missing_dates:
     task = Task(task_type=task_type, date=missing_date, num_people=task_type.num_people, score=task_type.score)
     task.save()
-    
+
   Task.objects.filter(task_type=task_type).update(num_people=task_type.num_people, score=task_type.score)
 
 
