@@ -15,6 +15,7 @@ from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileFi
                           ValidationError, FileInput, ModelMultipleChoiceField)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
+from django.utils.translation import ugettext as _
 
 from dicpick.models import Event, Participant, Tag, Task, TaskType, Assignment
 from dicpick.templatetags.dicpick_helpers import date_to_slug
@@ -199,8 +200,7 @@ class TaskFormBase(FormWithTags):
     for assignee in assignees:
       if (self.instance.date in assignee.cached_task_dates and
           self.instance.id not in [t.id for t in assignee.cached_tasks]):
-        raise ValidationError('{} already assigned to "{}" on this date.'.format(
-            assignee, self.instance.task_type.name))
+        raise ValidationError('{} already assigned to a {} on this date.'.format(assignee, _('task')))
     return assignees
 
   def save(self, commit=True):

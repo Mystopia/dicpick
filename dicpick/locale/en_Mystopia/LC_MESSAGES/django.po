@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2016-07-17 22:41+0000\n"
+"POT-Creation-Date: 2016-08-20 16:09+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,34 +17,40 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
+#: forms.py:203
+msgid "task"
+msgstr "DIC"
+
+#: templates/dicpick/all_tasks.html:8 templates/dicpick/event_detail.html:18
+#: templates/dicpick/event_detail.html:21
+#: templates/dicpick/event_detail.html:26 views.py:331 views.py:393
+msgid "Task"
+msgstr "DIC"
+
 #: templates/dicpick/event_detail.html:13
 #: templates/dicpick/event_detail.html:14
 #: templates/dicpick/event_detail.html:15
-#: templates/dicpick/event_detail.html:28 views.py:197 views.py:249
+#: templates/dicpick/event_detail.html:29 views.py:207 views.py:265
 msgid "Participants"
 msgstr "Campers"
 
 #: templates/dicpick/event_detail.html:16
-#: templates/dicpick/event_detail.html:29
-#: templates/dicpick/participant_scores.html:6
-#: templates/dicpick/participant_scores.html:12
+#: templates/dicpick/event_detail.html:30
+#: templates/dicpick/participant_scores.html:7
+#: templates/dicpick/participant_scores.html:13 views.py:393
 msgid "Participant"
 msgstr "Camper"
 
 #: templates/dicpick/event_detail.html:17
 #: templates/dicpick/event_detail.html:19
 #: templates/dicpick/event_detail.html:20
-#: templates/dicpick/event_detail.html:24
+#: templates/dicpick/event_detail.html:25
+#: templates/dicpick/participant_scores.html:14
 #: templates/dicpick/tasks_by_date.html:7
-#: templates/dicpick/tasks_by_type.html:6
+#: templates/dicpick/tasks_by_type.html:6 views.py:405 views.py:438
 msgid "Tasks"
 msgstr "DICs"
 
-#: templates/dicpick/event_detail.html:18
-#: templates/dicpick/event_detail.html:25 views.py:289
-msgid "Task"
-msgstr "DIC"
-
-#: views.py:203
+#: views.py:213
 msgid "person"
 msgstr "Mystopian"

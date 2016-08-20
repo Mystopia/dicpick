@@ -73,6 +73,17 @@ form.formset .control-label {
     display: none;
 }
 
+/* In some cases these select boxes can get huge, so limit their vertical space and let them scroll if needed. */
+select.field-do_not_assign_to + span {
+    max-height: 84px;
+    overflow: auto;
+}
+
+select.field-do_not_assign_with + span {
+    max-height: 84px;
+    overflow: auto;
+}
+
 /* Widths for various form tables. */
 .tag-table-container {
     width: 300px;
