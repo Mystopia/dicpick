@@ -1,12 +1,12 @@
 #!/bin/sh
 
-# TODO: It looks like PyPi no longer has permalinks to tarballs.
-COMMONS=materiality.commons-0.1.21
+COMMONS_VERSION=0.1.21
+COMMONS=materiality.commons-${COMMONS_VERSION}
 
 if [ ! -e .bootstrap/src ]; then
     mkdir -p .bootstrap
-    curl https://pypi.python.org/packages/source/m/materiality.commons/${COMMONS}.tar.gz \
-      -o .bootstrap/${COMMONS}.tar.gz -sS
-    tar xfz .bootstrap/${COMMONS}.tar.gz -C .bootstrap
+    curl https://github.com/benjyw/materiality.commons/archive/v${COMMONS_VERSION}.zip \
+      -o .bootstrap/${COMMONS}.zip -sSL
+    unzip .bootstrap/${COMMONS}.zip -d .bootstrap
     ln -s ${COMMONS}/src .bootstrap/src
 fi
