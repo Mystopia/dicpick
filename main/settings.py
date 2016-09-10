@@ -69,10 +69,10 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-  # High in the list, so it can overide the standard collectstatic command.
+  # Above django.contrib.staticfiles, so it can overide the standard collectstatic command.
   'materiality.django.static',
 
-  # High in the list, so it can override the standard createsuperuser command.
+  # Above django.contrib.auth, so it can override the standard createsuperuser command.
   'dicpick.monkeypatch',
 
   'django.contrib.admin',
@@ -83,13 +83,16 @@ INSTALLED_APPS = (
   'django.contrib.messages',
   'django.contrib.staticfiles',
 
+  # Uncomment to see the debug toolbar.
   #'debug_toolbar',
 
   'dicpick.apps.DicPickConfig',
 )
 
 MIDDLEWARE_CLASSES = (
+  # Uncomment to see the debug toolbar.
   #'debug_toolbar.middleware.DebugToolbarMiddleware',
+
   'django.contrib.sessions.middleware.SessionMiddleware',
   'django.middleware.locale.LocaleMiddleware',
   'django.middleware.common.CommonMiddleware',
