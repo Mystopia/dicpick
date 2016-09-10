@@ -69,8 +69,11 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-  # First in the list, so it can overide the standard collectstatic command.
+  # High in the list, so it can overide the standard collectstatic command.
   'materiality.django.static',
+
+  # High in the list, so it can override the standard createsuperuser command.
+  'dicpick.monkeypatch',
 
   'django.contrib.admin',
   'django.contrib.auth',
