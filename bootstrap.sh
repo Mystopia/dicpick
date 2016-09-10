@@ -1,6 +1,6 @@
 #!/bin/sh
 
-COMMONS_VERSION=0.1.21
+COMMONS_VERSION=0.1.23
 COMMONS=materiality.commons-${COMMONS_VERSION}
 
 if [ ! -e .bootstrap/src ]; then
