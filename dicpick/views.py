@@ -271,8 +271,8 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
           # We exclude the user field from validation (see forms.py for the reason), Django doesn't
           # set it on the instance either for some reason. So we set it manually here.
           form.instance.user = user
-          if form.cleaned_data and not form.initial.get('user'):
-            # This is a user we just added, so add them to the camp's group.
+          if user != form.initial.get('user'):
+            # This may be a new user, so add them to the camp's group.
             user.groups.add(self.camp.member_group)
       return super(ParticipantsUpdate, self).form_valid(formset)
 

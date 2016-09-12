@@ -287,13 +287,8 @@ class TaskByDateForm(TaskFormBase):
 
 
 # A custom widget/field pair to bind together a user id and its data for use in the participants formset.
-# This complexity exists so that you can update a user's email address in the UI.  However this is probably
-# a bad idea, since elswhere we treat the email address as the user's unique identifier (e.g., it's used in their
-# login credentials), so this now seems like overkill.  Not to mention the fact that a malicious client can
-# spoof a user id and cause havoc.
-# TODO: Get rid of this in favor of a simpler approach that just treats the email address as the user's identity.
-# If a user really wants to change their email address (and hence their login credential) then this can still
-# be done via the Django admin UI.
+# This is how we bridge between our form, which lets you edit users as text, inline in the participant form,
+# and Django's form handling mechanism, which needs to end up with a user id to put in the model field.
 
 class UserWidget(MultiWidget):
   """Custom widget for editing a user.
@@ -303,15 +298,17 @@ class UserWidget(MultiWidget):
   """
   placeholder = 'Jane Doe (jane.doe@email.com)'
   def __init__(self, attrs=None):
+    # A map of id -> user for all relevant users.
+    # This saves us from doing database lookups one by one.
     self.users_by_id = None  # Will be set when the form is created.
-    super(UserWidget, self).__init__((HiddenInput, TextInput(attrs={'class': 'user-widget',
-                                                                    'placeholder': self.placeholder})), attrs)
+    super(UserWidget, self).__init__((TextInput(attrs={'class': 'user-widget',
+                                                                    'placeholder': self.placeholder}),), attrs)
 
   def decompress(self, user_id):
     if user_id is None:
-      return [None, '']
+      return ['']
     user = self.users_by_id[user_id]
-    return [user.id, '{} {} ({})'.format(user.first_name, user.last_name, user.email)]
+    return ['{} {} ({})'.format(user.first_name, user.last_name, user.email)]
 
 
 class UserField(MultiValueField):
@@ -322,15 +319,14 @@ class UserField(MultiValueField):
   user_re = re.compile(r'^\s*(?P<first_name>[A-Za-z\- ]+)\s+(?P<last_name>[A-Za-z\-]+)\s+\(\s*(?P<email>\S+)\s*\)\s*$')
 
   def __init__(self, *args, **kwargs):
-    self.users_by_id = None  # Will be set when the form is created.
-    super(UserField, self).__init__((CharField(required=False), CharField()),
+    super(UserField, self).__init__((CharField(), ),
                                     *args,
                                     widget=UserWidget(),
                                     require_all_fields=False,
                                     **kwargs)
 
   def compress(self, data_list):
-    user_id, data_str = data_list
+    data_str = data_list[0]
     m = self.user_re.match(data_str)
     if m is None:
       raise ValidationError('User field must be of the form: First Last (Email)')
@@ -338,33 +334,19 @@ class UserField(MultiValueField):
     first_name = m.group('first_name').strip()
     last_name = m.group('last_name')
 
-    if not user_id:
-      # See if we know the email address.  Note that this only happens for the extra forms.
-      try:
-        user = User.objects.filter(email=email).get()
-      except User.DoesNotExist:
-        # We must create the new user here, not in the view, because standard ModelForm validation on ParticipantForm
-        # will require a non-empty user_id in the user field (as it's not nullable in the Participant model).
-        user = create_user(email, first_name, last_name)
-    else:
-      user = self.users_by_id[int(user_id)]
-
-    # Update the fields if needed.
-    # TODO: A more elegant way to only save if there are changes.
-    save = False
-    if user.email != email:
-      user.email = email
-      save = True
-    if user.first_name != first_name:
-      user.first_name = first_name
-      save = True
-    if user.last_name != last_name:
-      user.last_name = last_name
-      save = True
-    if save:
-      user.save()
+    # See if we know the email address.
+    try:
+      user = User.objects.filter(email=email).get()
+      # Update the fields if needed.
+      if user.first_name != first_name or user.last_name != last_name:
+        user.first_name = first_name
+        user.last_name = last_name
+        user.save()
+    except User.DoesNotExist:
+      # We must create the new user here, not in the view, because standard ModelForm validation on ParticipantForm
+      # will require a non-empty user_id in the user field (as it's not nullable in the Participant model).
+      user = create_user(email, first_name, last_name)
     return user
-
 
 class ParticipantForm(FormWithTagsBase):
   """Form to add/edit a single participant."""
@@ -391,7 +373,6 @@ class ParticipantForm(FormWithTagsBase):
     participants_by_id = kwargs.pop('participants_by_id')
     users_by_id = kwargs.pop('users_by_id')
     super(ParticipantForm, self).__init__(*args, **kwargs)
-    self.fields['user'].users_by_id = users_by_id
     self.fields['user'].widget.users_by_id = users_by_id
 
     do_not_assign_with_field = self.fields['do_not_assign_with']
