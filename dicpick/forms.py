@@ -99,7 +99,7 @@ class FormWithTagsBase(DicPickModelFormBase):
 
 
 class TagForm(DicPickModelFormBase):
-  """A form to add/edit a single tag."""
+  """A form to add/edit tags."""
   class Meta:
     model = Tag
     fields = ['name']
@@ -493,6 +493,8 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
     return kwargs
 
   def participant_id_to_python(self, participant_id):
+    if participant_id is None or participant_id == '':
+      return None
     try:
       return self._participants_by_id[int(participant_id)]
     except KeyError:
