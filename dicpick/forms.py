@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
                           ModelForm, MultiValueField, MultiWidget, SelectMultiple, TextInput, URLField,
-                          ValidationError, FileInput, ModelMultipleChoiceField)
+                          ValidationError, FileInput, ModelMultipleChoiceField, Field)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 from django.utils.translation import ugettext as _
@@ -290,44 +290,40 @@ class TaskByDateForm(TaskFormBase):
 # This is how we bridge between our form, which lets you edit users as text, inline in the participant form,
 # and Django's form handling mechanism, which needs to end up with a user id to put in the model field.
 
-class UserWidget(MultiWidget):
-  """Custom widget for editing a user.
-
-  This is a MultiWidget that encapsulates two widgets: a hidden input for the user id and a text input
-  for the "FirstName LastName (email)" data.
-  """
+class UserWidget(TextInput):
+  """Custom widget for editing a user inline, as 'FirstName LastName (email)'."""
   placeholder = 'Jane Doe (jane.doe@email.com)'
+
   def __init__(self, attrs=None):
+    attrs = attrs or {}
+    attrs['class'] = 'user-widget'
+    attrs['placeholder'] = self.placeholder
     # A map of id -> user for all relevant users.
     # This saves us from doing database lookups one by one.
     self.users_by_id = None  # Will be set when the form is created.
-    super(UserWidget, self).__init__((TextInput(attrs={'class': 'user-widget',
-                                                                    'placeholder': self.placeholder}),), attrs)
+    super(UserWidget, self).__init__(attrs)
 
-  def decompress(self, user_id):
+  def render(self, name, user_id, attrs=None):
     if user_id is None:
-      return ['']
-    user = self.users_by_id[user_id]
-    return ['{} {} ({})'.format(user.first_name, user.last_name, user.email)]
+      value = ''
+    else:
+      user = self.users_by_id[user_id]
+      value ='{} {} ({})'.format(user.first_name, user.last_name, user.email)
+    return super(UserWidget, self).render(name, value, attrs)
 
 
-class UserField(MultiValueField):
-  """A custom field for adding/editing a user.
+class UserField(Field):
+  """A custom field for adding/editing a user inline, as 'FirstName LastName (email)'."""
 
-  This is a MultiValueField that encapsulates two fields: a user id, and the "FirstName LastName (email)" data.
-  """
+  # A regex to match the 'FirstName LastName (email)' pattern.
   user_re = re.compile(r'^\s*(?P<first_name>[A-Za-z\- ]+)\s+(?P<last_name>[A-Za-z\-]+)\s+\(\s*(?P<email>\S+)\s*\)\s*$')
 
   def __init__(self, *args, **kwargs):
-    super(UserField, self).__init__((CharField(), ),
-                                    *args,
-                                    widget=UserWidget(),
-                                    require_all_fields=False,
-                                    **kwargs)
+    kwargs['widget'] = UserWidget()
+    super(UserField, self).__init__(*args, **kwargs)
 
-  def compress(self, data_list):
-    data_str = data_list[0]
-    m = self.user_re.match(data_str)
+  def clean(self, value):
+    m = self.user_re.match(value)
     if m is None:
       raise ValidationError('User field must be of the form: First Last (Email)')
     email = m.group('email')
