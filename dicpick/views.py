@@ -26,13 +26,23 @@ from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
 from dicpick.assign import assign_for_task_ids
-from dicpick.forms import (EventForm, InlineFormsetWithTagChoices,
+from dicpick.forms import (EventForm, InlineFormsetWithTagChoicesBase,
                            ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
                            TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
                            TaskInlineFormset, TaskModelFormset)
 from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
-from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo, date_to_short_str
+from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
 from dicpick.util import create_user
+
+
+# Many views share common functionality (such as converting camp and event slugs to objects).
+# This commonality is implemented as mixins, which must have no `__init__` method, no state, and
+#  must be the leftmost superclasses of their subclasss.
+# The mixins act on members they don't themselves define.  They assume that they will be mixed in
+# to classes that do have those members.  Dynamic dispatch FTW.  This does mean, however, that
+# an IDE may see these as unresolved references and warn about them.
+
+# TODO: This file is now quite long. Break it up into multiple files?
 
 
 class CampRelatedMixin(object):
@@ -43,10 +53,19 @@ class CampRelatedMixin(object):
 
 
 class IsCampAdminMixin(UserPassesTestMixin, CampRelatedMixin):
+  """Mixin for camp-related views that are only viewable by the admins of the camp.
+
+  We also use this to set any camp-specific language variants.
+
+  Note that mixing this in has the side effect of requiring the user to be logged in,
+  so views that do so shouldn't decorate themselves with @login_required.
+  """
   def test_func(self):
     return self.request.user.is_superuser or self.request.user.groups.filter(pk=self.camp.admin_group_id).exists()
 
   def get(self, request, *args, **kwargs):
+    # We hard-code some special casing for mystopia.  If other camps want their own special language
+    # variant, we'll come up with a more dynamic approach.
     # Note that setting the language in the session here will only take effect on the next request.
     if self.camp.slug == 'mystopia':
       request.session[translation.LANGUAGE_SESSION_KEY] = 'en-mystopia'
@@ -59,6 +78,10 @@ class IsCampAdminMixin(UserPassesTestMixin, CampRelatedMixin):
 
 @login_required
 def user_home(request):
+  """View to render the user's home page.
+
+  Currently just a list of camps the user is an admin of.
+  """
   camps = Camp.objects.filter(admin_group__in=list(request.user.groups.all()))
   context = {
     'camps': camps
@@ -69,6 +92,7 @@ def user_home(request):
 # Camp views.
 
 class CampDetail(IsCampAdminMixin, DetailView):
+  """View to edit a camp's direct properties (name etc.)."""
   model = Camp
   slug_url_kwarg = 'camp_slug'
   context_object_name = 'camp'
@@ -120,10 +144,12 @@ class EventRelatedFormMixin(EventRelatedTemplateMixin):
 
 
 class EventRelatedSingleFormMixin(EventRelatedFormMixin):
+  """Mixin for views that modify a single model instance under a single event."""
   template_name = 'dicpick/event_related_single_form.html'
 
 
 class EventRelatedFormsetMixin(EventRelatedFormMixin):
+  """Mixin for views that modify multiple instances of a model under a single event."""
   template_name = 'dicpick/event_related_formset.html'
 
 
@@ -139,6 +165,8 @@ class EventFormMixin(EventMixin, EventRelatedSingleFormMixin):
     form.instance.camp_id = self.camp.pk
     return super(EventFormMixin, self).form_valid(form)
 
+
+# Views to create/update/delete/view a single event's direct properties.
 
 class EventCreate(EventFormMixin, CreateView):
   @property
@@ -165,7 +193,7 @@ class EventRelatedFormsetUpdate(EventRelatedFormsetMixin, FormView):
   """Base class for views that update 1:many data belonging to a single event via foreign key."""
 
   @staticmethod
-  def create_form_class(single_model_form_class, formset_base_class=InlineFormsetWithTagChoices):
+  def create_form_class(single_model_form_class, formset_base_class=InlineFormsetWithTagChoicesBase):
     return inlineformset_factory(Event, single_model_form_class.Meta.model,
                                  form=single_model_form_class, extra=1,
                                  formset=formset_base_class)
@@ -178,11 +206,14 @@ class EventRelatedFormsetUpdate(EventRelatedFormsetMixin, FormView):
 
   def form_valid(self, form):
     if form.is_valid():
-      form.save()
+      # Ensure that all forms in the formset (and all signal processing) are atomic.
+      with transaction.atomic():
+        form.save()
     return super(EventRelatedFormsetUpdate, self).form_valid(form)
 
 
 class TagsUpdate(EventRelatedFormsetUpdate):
+  """Create/update/delete an event's tags."""
   form_class = EventRelatedFormsetUpdate.create_form_class(TagForm)
   legend = 'Enter Tags'
   help_text = "Short tags describing people and possibly restricting the tasks they're allowed to do.\n" \
@@ -190,6 +221,7 @@ class TagsUpdate(EventRelatedFormsetUpdate):
 
 
 class ParticipantScores(EventRelatedTemplateMixin, TemplateView):
+  """Show all participants scores."""
   template_name = 'dicpick/participant_scores.html'
 
   @classmethod
@@ -198,6 +230,7 @@ class ParticipantScores(EventRelatedTemplateMixin, TemplateView):
 
 
 class ParticipantsUpdate(EventRelatedFormsetUpdate):
+  """Create/update/delete an event's participants."""
   form_class = EventRelatedFormsetUpdate.create_form_class(ParticipantForm, formset_base_class=ParticipantInlineFormset)
   help_text = ("Details of a person's participation in this event.\n"
                "Existing users are identified via email address.  New users are created as needed.")
@@ -244,6 +277,7 @@ class ParticipantsUpdate(EventRelatedFormsetUpdate):
 
 
 class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
+  """Import participant data from a JSON data source."""
   form_class = ParticipantImportForm
 
   help_text = textwrap.dedent("""
@@ -322,6 +356,7 @@ class ParticipantsImport(EventRelatedSingleFormMixin, FormView):
 
 
 class TaskTypesUpdate(EventRelatedFormsetUpdate):
+  """Create/update/delete task types."""
   form_class = EventRelatedFormsetUpdate.create_form_class(TaskTypeForm)
   help_text = ('These are categories of tasks, each of which must be performed on '
                'multiple days, possibly by multiple people.\nE.g., Morning MOOP Sweep, Dinner Sous Chef.')
@@ -342,18 +377,21 @@ class TaskTypesUpdate(EventRelatedFormsetUpdate):
 
 
 class TasksByType(EventRelatedTemplateMixin, TemplateView):
+  """Browse tasks by type."""
   template_name = 'dicpick/tasks_by_type.html'
 
 
 class TasksByDate(EventRelatedTemplateMixin, TemplateView):
+  """Browse tasks by date."""
   template_name = 'dicpick/tasks_by_date.html'
 
 
-class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
+class InlineTaskFormsetUpdateBase(EventRelatedFormMixin, FormView):
+  """Base class for views that update multiple tasks (by type, or by date)."""
   template_name = 'dicpick/task_formset.html'
 
   def get_form_kwargs(self):
-    kwargs = super(InlineTaskFormsetUpdate, self).get_form_kwargs()
+    kwargs = super(InlineTaskFormsetUpdateBase, self).get_form_kwargs()
     kwargs['event'] = self.event
     kwargs['queryset'] = (
       Task.objects
@@ -381,7 +419,7 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
       if form.is_valid():
         form.save()
       if 'assign' in self.request.POST:
-        # Weirdly, t['id'] is a full Task object, not an int.
+        # Weirdly, t['id'] in form.cleaned_data is a full Task object, not an int.
         # Note that we must let the assign code re-fetch the Task objects, so it can prefetch
         # related objects, filter them etc.
         forms_by_task_id = {t['id'].id: f for (t, f) in zip(form.cleaned_data, form.forms)}
@@ -393,13 +431,14 @@ class InlineTaskFormsetUpdate(EventRelatedFormMixin, FormView):
                                                     _('Participant'), _('Task')))
           return self.form_invalid(form)
 
-    return super(InlineTaskFormsetUpdate, self).form_valid(form)
+    return super(InlineTaskFormsetUpdateBase, self).form_valid(form)
 
   def get_success_url(self):
     return self.request.path   # Return to the same formset for further editing.
 
 
-class TasksByTypeUpdate(InlineTaskFormsetUpdate):
+class TasksByTypeUpdate(InlineTaskFormsetUpdateBase):
+  """Update all tasks of a given type."""
   @property
   def legend(self):
     return 'Edit {} {}'.format(self.task_type.name, _('Tasks'))
@@ -414,6 +453,7 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
                              pk=self.kwargs['task_type_pk'])
 
   def get_form_class(self):
+    # Note that this is an inlineformset, because these tasks share a foreign key to the TaskType.
     return inlineformset_factory(TaskType, Task, form=TaskByTypeForm, extra=0, can_delete=False,
                                  formset=TaskInlineFormset)
 
@@ -430,7 +470,8 @@ class TasksByTypeUpdate(InlineTaskFormsetUpdate):
     return kwargs
 
 
-class TasksByDateUpdate(InlineTaskFormsetUpdate):
+class TasksByDateUpdate(InlineTaskFormsetUpdateBase):
+  """Update all tasks on a given date."""
   template_name = 'dicpick/task_by_date_update.html'
 
   @property
@@ -442,6 +483,8 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
     return datetime.datetime.strptime(self.kwargs['date'], '%Y_%m_%d').date()
 
   def get_form_class(self):
+    # Note that this is a modelformset, not an inlineformset, because these tasks don't share
+    # a foreign key to anything.
     return modelformset_factory(Task, form=TaskByDateForm, extra=0, can_delete=False,
                                 formset=TaskModelFormset)
 
@@ -461,6 +504,7 @@ class TasksByDateUpdate(InlineTaskFormsetUpdate):
 
 
 class AllTasks(EventRelatedTemplateMixin, TemplateView):
+  """Show a matrix (or a csv stream) of all task assignments."""
   template_name = 'dicpick/all_tasks.html'
 
   @classmethod
@@ -505,8 +549,10 @@ class AllTasks(EventRelatedTemplateMixin, TemplateView):
 
 
 class TagAutocomplete(EventRelatedMixin, View):
+  """View to serve tag autocomplete ajax requests."""
   def get(self, request, camp_slug, event_slug):
     query = request.GET.get('q') or ''
+    # Note that we return just the first 5 results.
     qs = Tag.objects.filter(event=self.event, name__istartswith=query)[:5]
     results = [{'id': t.id, 'text': t.name} for t in qs]
     ret = {
@@ -516,6 +562,7 @@ class TagAutocomplete(EventRelatedMixin, View):
 
 
 class ParticipantAutocomplete(EventRelatedMixin, View):
+  """View to serve participant autocomplete ajax requests."""
   def get(self, request, camp_slug, event_slug):
     query = request.GET.get('q') or ''
 
@@ -528,6 +575,7 @@ class ParticipantAutocomplete(EventRelatedMixin, View):
 
     filters = [Q(**{'user__{}__istartswith'.format(f): query}) for f in ['username', 'first_name', 'last_name', 'email']]
     combined_filter = Q(event=self.event) & reduce(lambda x, y: x | y, filters)
+    # Note that we return just the first 5 results.
     qs = (
       Participant.objects.filter(combined_filter)
         .select_related('user')

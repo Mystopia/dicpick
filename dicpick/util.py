@@ -10,6 +10,11 @@ from django.db import IntegrityError, transaction
 
 
 def create_user(email, first_name, last_name, num_attempts=10):
+  """Helper function to create a User instance based on an email address, first name and last name.
+
+  To successfully create a User we need to synthesize a unique username.  We try this num_attempts times
+  before giving up.
+  """
   for attempt in range(num_attempts):
     user = User()
     user.email = email

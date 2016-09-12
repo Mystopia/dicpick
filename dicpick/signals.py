@@ -10,8 +10,15 @@ from django.dispatch import receiver
 from dicpick.models import Task, TaskType
 
 
+# The signal handlers below ensure that certain changes to TaskType are reflected onto all the tasks of that type.
+# Note that the signal handlers run in the same transaction as the event that triggered the signal.
+
 @receiver(post_save, sender=TaskType)
 def create_task_instances(sender, instance, **kwargs):
+  """Ensure that there is a task instance for each date in the range specified by the task type.
+
+  Necessary to support date range changes.
+  """
   task_type = instance
   existing_dates = set([task.date for task in task_type.tasks.all()])
   required_dates = set(task_type.date_range())
@@ -27,6 +34,7 @@ def create_task_instances(sender, instance, **kwargs):
 
 @receiver(m2m_changed, sender=TaskType.tags.through)
 def tags_updated(sender, instance, action, **kwargs):
+  """If tags were added to or removed from a TaskType, add/remove them from all tasks of that type."""
   task_type = instance
   pk_set = kwargs.pop('pk_set')
   if action == 'post_add':

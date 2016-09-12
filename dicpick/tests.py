@@ -6,4 +6,4 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 
 from django.test import TestCase
 
-# Create your tests here.
+# Alas, no tests yet.

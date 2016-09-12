@@ -8,6 +8,7 @@ from django.apps import AppConfig
 
 
 class DicPickConfig(AppConfig):
+  """An app config that sets up our signals."""
   name = 'dicpick'
 
   def ready(self):

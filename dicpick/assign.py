@@ -7,10 +7,13 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 import random
 from collections import defaultdict
 
-import datetime
+from django.db import transaction
 from django.db.models import Count, F
 
 from dicpick.models import Task, Assignment
+
+
+"""Helper functions to auto-assign participants to tasks."""
 
 
 class NoEligibleParticipant(Exception):
@@ -20,30 +23,30 @@ class NoEligibleParticipant(Exception):
     self.task = task
 
 
-def assign_from_request(event, request):
-  task_type_str = request.POST.get('task_type')
-  date_str = request.POST.get('date')
-  task_type_id = int(task_type_str) if task_type_str else None
-  dt = datetime.datetime.strptime(date_str, '%Y_%m_%d') if date_str else None
-  return assign_for_task_type_and_date(event, task_type_id, dt)
-
-
-def assign_for_task_type_and_date(event, task_type_id, dt):
-  task_filter = {}
-  if task_type_id is not None:
-    task_filter['task_type'] = task_type_id
-  if dt is not None:
-    task_filter['date'] = dt
-
-  return assign_for_filter(event, **task_filter)
-
-
 def assign_for_task_ids(event, task_ids):
+  """Auto-assign the specified tasks.
+
+  :param event: The event the tasks belong to.
+  :param task_ids: The tasks to assign (which must belong to the given event).
+  """
   return assign_for_filter(event, id__in=task_ids)
 
 
+@transaction.atomic
 def assign_for_filter(event, **task_filter):
-  # Note that the event filter is important even if we have a task_type_id,
+  """The actual auto-assign logic.
+
+  Attempts to assign participants to all tasks that are selected by the given filter.
+
+  Note that we currently assign at most one task per participant per date, to avoid scheduling conflicts.
+  If this turns out to be too restrictive (that is, if we do need to assign the same person two tasks on the
+  same day) we'll have to have more fine-grained scheduling, e.g., a range of hours, or a simple
+  morning/afternoon/evening distinction.
+
+  :param event: Assign this event's tasks.
+  :param task_filter: Assign only to the event's tasks that match this QuerySet filter.
+  """
+  # Note that the event filter is important even if we have a task_type_id in the task_filter,
   # to verify that the task_type does actually belong to the event.
   tasks = list(
       Task.objects
@@ -60,28 +63,32 @@ def assign_for_filter(event, **task_filter):
         .all()
   )
 
+  # Map of participant id -> Participant object with that id.
   participants_by_id = {p.id: p for p in participants}
 
+  # Map of participant id -> set of dates on which that participant already has assigned tasks.
   participant_busy_dates_by_id = {p.id: p.cached_task_dates for p in participants}
 
-  def _is_eligible(task, participant):
-    if participant in task.cached_do_not_assign_to:
+  def _is_eligible(task, p):
+    """Returns True iff the participant is eligible to be assigned to the task."""
+    if p in task.cached_do_not_assign_to:
       return False
     for a in task.cached_assignees:
-      if participant == a or participant in a.cached_do_not_assign_with:
+      if p == a or p in a.cached_do_not_assign_with:
         return False
 
     task_tags = set(task.cached_tags)
-    return (participant.is_in_date_range(task.date) and
-            task.date not in participant_busy_dates_by_id[participant.id] and
-            (not task_tags or task_tags.intersection(participant.cached_tags)))
+    return (p.is_in_date_range(task.date) and
+            task.date not in participant_busy_dates_by_id[p.id] and
+            (not task_tags or task_tags.intersection(p.cached_tags)))
 
   # All task_types we're dealing with.
-  task_types = set()
+  task_types = set(task.task_type for task in tasks)
 
-  for task in tasks:
-    task_types.add(task.task_type)
-
+  # Triples of (participant id, tasks__task_type, count), where count is always > 0.
+  # These state how many tasks of that type have been assigned to that participant.
+  # This is useful for "task diversity" - attempting not to assign too many tasks of a single type to
+  # a single participant.
   participant_task_type_counts = (
     event.participants
       .values('id', 'tasks__task_type')
@@ -90,7 +97,7 @@ def assign_for_filter(event, **task_filter):
       .all()
   )
 
-  # task_type -> count -> participants already assigned this number of tasks of that task_type.
+  # Map of task_type -> (map of count -> participants already assigned this number of tasks of that task_type).
   task_type_count_participants = defaultdict(lambda: defaultdict(set))
 
   # Start by assuming participants are assigned to 0 tasks of each type.
@@ -102,34 +109,43 @@ def assign_for_filter(event, **task_filter):
   for x in participant_task_type_counts:
     task_type_id = x['tasks__task_type']
     participant_id = x['id']
-    count = x['count']
     task_type_count_participants[task_type_id][0].discard(participants_by_id[participant_id])
-    task_type_count_participants[task_type_id][count].add(participants_by_id[participant_id])
+    task_type_count_participants[task_type_id][x['count']].add(participants_by_id[participant_id])
 
+  # Tasks we failed to assign anyone to.
   unassignable_tasks = set()
-  to_create = []
-  for task in tasks:
-    try:
-      for i in range(task.cached_assignees.count(), task.num_people):
-        # First try candidates with 0 tasks of this type, then 1, etc.  This ensures the best spread of task diversity.
-        count_participant_pairs = sorted(task_type_count_participants[task.task_type_id].items())
-        for count, candidates in count_participant_pairs:
-          eligible = [p for p in candidates if _is_eligible(task, p)]
-          if eligible:  # Pick some random candidate from among those with the lowest score.
-            lowest_score = min(p.assigned_score for p in eligible)
-            assign_to = random.choice([p for p in eligible if p.assigned_score == lowest_score])
-            break
-        else:
-          unassignable_tasks.add(task.id)
-          raise NoEligibleParticipant(task)
 
-        task_type_count_participants[task.task_type.id][count].remove(assign_to)
-        task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
-        to_create.append(Assignment(participant=assign_to, task=task, automatic=True))
-        assign_to.assigned_score += task.score
-        participant_busy_dates_by_id[assign_to.id].add(task.date)
-    except NoEligibleParticipant:
-      pass
+  # Assignment objects representing successful assignments that need to be stored in the database.
+  to_create = []
+
+  # Helper function to auto-assign a single task, if possible.
+  def assign_task(task):
+    # Assign the remaining empty assignment slots for this task.
+    for i in range(task.cached_assignees.count(), task.num_people):
+      # First try candidates with 0 tasks of this type, then 1, etc.  This provides a good spread of task diversity.
+      count_participant_pairs = sorted(task_type_count_participants[task.task_type_id].items())
+      for count, candidates in count_participant_pairs:
+        eligible = [p for p in candidates if _is_eligible(task, p)]
+        if eligible:  # Pick some random candidate from among those with the lowest score.
+          lowest_score = min(p.assigned_score for p in eligible)
+          assign_to = random.choice([p for p in eligible if p.assigned_score == lowest_score])
+          break
+      else:
+        unassignable_tasks.add(task.id)
+        return
+
+      # Do the accounting to update our data structures.
+      task_type_count_participants[task.task_type.id][count].remove(assign_to)
+      task_type_count_participants[task.task_type.id][count + 1].add(assign_to)
+      participant_busy_dates_by_id[assign_to.id].add(task.date)
+
+      # Create the Assignment object representing the successful assignment.
+      to_create.append(Assignment(participant=assign_to, task=task, automatic=True))
+      assign_to.assigned_score += task.score
+
+  # Now attempt to assign each task.
+  for t in tasks:
+    assign_task(t)
 
   Assignment.objects.bulk_create(to_create)
   return unassignable_tasks

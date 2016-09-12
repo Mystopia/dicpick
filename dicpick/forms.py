@@ -22,14 +22,26 @@ from dicpick.templatetags.dicpick_helpers import date_to_slug
 from dicpick.util import create_user
 
 
-# Note: This file contains many hacks to work around Django's naive handling of inline formsets.
+# Note: This file contains many performance hacks to work around Django's naive handling of inline formsets.
 
 
-class DicPickModelForm(ModelForm):
+class DicPickModelFormBase(ModelForm):
+  """Base class for forms that edit a single model instance."""
   def __init__(self, *args, **kwargs):
-    super(DicPickModelForm, self).__init__(*args, **kwargs)
+    super(DicPickModelFormBase, self).__init__(*args, **kwargs)
     for field in self.fields.values():
       field.error_messages = {'required': 'Required'}
+
+  # A 'designator' is a property of the model that should not be edited by a given form,
+  # but should still be displayed.  For example, when editing all tasks on a certain date,
+  # we want to display their type, but we do not want to allow users to change the type.
+  # Similarly, when editing all tasks of a certain type, we want to display each task's date,
+  # but not allow users to change the date.
+  # This is primarily useful when the form is used in a formset.
+  #
+  # Note that using disabled or read-only form fields for this kind of thing is a bad idea:
+  # the update view still expects a value from those fields, and a malicious client can send the
+  # wrong value.  Our 'designator' mechanism avoids this, as the designator is not a form field at all.
 
   def has_designator(self):
     return hasattr(self.Meta, 'designator_field')
@@ -40,6 +52,8 @@ class DicPickModelForm(ModelForm):
   def designator(self):
     return getattr(self.instance, self.Meta.designator_field)
 
+  # The designator link, if any, is the url to visit when the designator is clicked on.
+
   def has_designator_link(self):
     return self.designator_link() is not None
 
@@ -47,7 +61,8 @@ class DicPickModelForm(ModelForm):
     return None
 
 
-class EventForm(DicPickModelForm):
+class EventForm(DicPickModelFormBase):
+  """A form to edit an event's direct properties."""
   class Meta:
     model = Event
     fields = ['name', 'slug', 'start_date', 'end_date']
@@ -63,23 +78,28 @@ class EventForm(DicPickModelForm):
     return data
 
 
-class FormWithTags(DicPickModelForm):
-  """Form base that accepts tag_choices instead of attempting to compute them.
+class FormWithTagsBase(DicPickModelFormBase):
+  """A base class for forms with many-to-many field, named 'tags', to the Tag model.
 
-  Computing them would involve re-evaluating the same queryset for every form in a formset.
+  A form with such a many-to-many field will use a multi-select widget, and will generate <option> elements for each
+  possible tag by querying the database for all possible tags. If you have N forms in a formset, this will cause
+  N identical database queries.
+
+  To avoid this, this base class takes a precomputed set of tags, as a performance hack.
   """
   def __init__(self, *args, **kwargs):
     tags_by_id = kwargs.pop('tags_by_id')
-    super(FormWithTags, self).__init__(*args, **kwargs)
-    # Create <option> tags for the currently selected values in this form, so that the initial data displays
-    # correctly. We don't create <option> tags for all other possible tag choices, as there may be many
-    # tags X many forms in the formset.  The other choices will come from the remote autocomplete view.
+    super(FormWithTagsBase, self).__init__(*args, **kwargs)
+    # Create <option> elements for the currently selected values in this form, so that the initial data displays
+    # correctly. We don't create <option> elements for all other possible tag choices. They will come from select2's
+    # autocomplete mechanism.
     field = self.fields['tags']
     field.choices = [(field.prepare_value(tags_by_id[x]), field.label_from_instance(tags_by_id[x]))
                      for x in self.initial.get('tags', [])]
 
 
-class TagForm(DicPickModelForm):
+class TagForm(DicPickModelFormBase):
+  """A form to add/edit a single tag."""
   class Meta:
     model = Tag
     fields = ['name']
@@ -90,7 +110,8 @@ class TagForm(DicPickModelForm):
     super(TagForm, self).__init__(*args, **kwargs)
 
 
-class TaskTypeForm(FormWithTags):
+class TaskTypeForm(FormWithTagsBase):
+  """A form to add/edit a single task type."""
   class Meta:
     model = TaskType
     fields = ['name', 'start_date', 'end_date', 'num_people', 'score', 'tags']
@@ -110,6 +131,7 @@ class TaskTypeForm(FormWithTags):
 
 
 class AssigneesSelect(SelectMultiple):
+  """A custom widget to render assignees efficiently."""
   def render_option(self, selected_choices, option_value, option_label):
     ret = super(AssigneesSelect, self).render_option(selected_choices, option_value, option_label)
     # Note that the task's assignment_set is prefetched, but we can't filter on it directly as that
@@ -121,7 +143,7 @@ class AssigneesSelect(SelectMultiple):
 
 
 class ParticipantMultipleChoiceField(ModelMultipleChoiceField):
-  """A field for selecting multiple participants, with performance fixes."""
+  """A field for selecting multiple participants, with performance hacks."""
   participants_by_id = None  # Set by the form on each instance, on creation.
 
   def clean(self, value):
@@ -147,7 +169,16 @@ class ParticipantMultipleChoiceField(ModelMultipleChoiceField):
     return ret
 
 
-class TaskFormBase(FormWithTags):
+class TaskFormBase(FormWithTagsBase):
+  """A base class for forms for editing tasks.
+
+  Tasks have many-to-many fields to the Participant model.  A form with such a many-to-many field will use a
+  multi-select widget, and will generate <option> elements for each possible participant by querying the database for
+  all possible participant. If you have N forms in a formset, this will cause N identical database queries, each
+  with a result set the size of the number of total participants in the event.
+
+  To avoid this, this base class takes a precomputed set of participants, as a performance hack.
+  """
   class Meta:
     model = Task
     # Subclasses must copy the fields list, because it gets modified by the framework.
@@ -176,15 +207,20 @@ class TaskFormBase(FormWithTags):
     designator_field = None
 
   def __init__(self, *args, **kwargs):
+    # Pop extra data provided by the views that use us.
     participants_by_id = kwargs.pop('participants_by_id')
     kwargs.pop('users_by_id')
     super(TaskFormBase, self).__init__(*args, **kwargs)
 
+    # Set up a many-to-many field to the Participant model.
+    # Note that the dp-for-date and dp-for-tags custom HTML attributes are used by our
+    # javascript to render the options specially if the participant is ineligible to be
+    # selected due to date or tag mismatch with a task.
     def setup_participants_m2m_field(field_name):
       field = self.fields[field_name]
-      # Create <option> tags for the currently selected values in this form, so that the initial data displays
-      # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
-      # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
+      # Create <option> elements for the currently selected values in this form, so that the initial data displays
+      # correctly. We don't create <option> elements for all other possible participant choices. They will come from
+      # select2's autocomplete mechanism.
       field.choices = [(field.prepare_value(participants_by_id[x]), field.label_from_instance(participants_by_id[x]))
                        for x in self.initial.get(field_name, [])]
       field.participants_by_id = participants_by_id
@@ -196,6 +232,10 @@ class TaskFormBase(FormWithTags):
     setup_participants_m2m_field('do_not_assign_to')
 
   def clean_assignees(self):
+    """Custom validation logic.
+
+    Disallows a participant from being assigned two tasks on the same date.
+    """
     assignees = self.cleaned_data.get('assignees')
     for assignee in assignees:
       if (self.instance.date in assignee.cached_task_dates and
@@ -204,8 +244,8 @@ class TaskFormBase(FormWithTags):
     return assignees
 
   def save(self, commit=True):
-    # Pop off the asignees so that the super call doesn't try to save them (which it can't do because
-    # the intermediate table isn't autocreated, and it won't know how to create instances of it).
+    # Pop off the asignees so that the super() call doesn't try to save them (which it can't do because
+    # the through table isn't autocreated, and it won't know how to create instances of it).
     assignees = self.cleaned_data.pop('assignees')
     with transaction.atomic():
       # Save without the assignees.
@@ -225,6 +265,7 @@ class TaskFormBase(FormWithTags):
 
 
 class TaskByTypeForm(TaskFormBase):
+  """Form for editing all tasks of a given type."""
   class Meta(TaskFormBase.Meta):
     fields = list(TaskFormBase.Meta.fields)
     designator_field = 'date'
@@ -235,6 +276,7 @@ class TaskByTypeForm(TaskFormBase):
 
 
 class TaskByDateForm(TaskFormBase):
+  """Form for editing all tasks on a given date."""
   class Meta(TaskFormBase.Meta):
     fields = list(TaskFormBase.Meta.fields)
     designator_field = 'task_type'
@@ -244,7 +286,21 @@ class TaskByDateForm(TaskFormBase):
     return reverse('dicpick:tasks_by_type_update', args=[event.camp.slug, event.slug, self.instance.task_type_id])
 
 
+# A custom widget/field pair to bind together a user id and its data for use in the participants formset.
+# This complexity exists so that you can update a user's email address in the UI.  However this is probably
+# a bad idea, since elswhere we treat the email address as the user's unique identifier (e.g., it's used in their
+# login credentials), so this now seems like overkill.  Not to mention the fact that a malicious client can
+# spoof a user id and cause havoc.
+# TODO: Get rid of this in favor of a simpler approach that just treats the email address as the user's identity.
+# If a user really wants to change their email address (and hence their login credential) then this can still
+# be done via the Django admin UI.
+
 class UserWidget(MultiWidget):
+  """Custom widget for editing a user.
+
+  This is a MultiWidget that encapsulates two widgets: a hidden input for the user id and a text input
+  for the "FirstName LastName (email)" data.
+  """
   placeholder = 'Jane Doe (jane.doe@email.com)'
   def __init__(self, attrs=None):
     self.users_by_id = None  # Will be set when the form is created.
@@ -259,6 +315,10 @@ class UserWidget(MultiWidget):
 
 
 class UserField(MultiValueField):
+  """A custom field for adding/editing a user.
+
+  This is a MultiValueField that encapsulates two fields: a user id, and the "FirstName LastName (email)" data.
+  """
   user_re = re.compile(r'^\s*(?P<first_name>[A-Za-z\- ]+)\s+(?P<last_name>[A-Za-z\-]+)\s+\(\s*(?P<email>\S+)\s*\)\s*$')
 
   def __init__(self, *args, **kwargs):
@@ -306,7 +366,8 @@ class UserField(MultiValueField):
     return user
 
 
-class ParticipantForm(FormWithTags):
+class ParticipantForm(FormWithTagsBase):
+  """Form to add/edit a single participant."""
   class Meta:
     model = Participant
     fields = ['user', 'start_date', 'end_date', 'tags', 'initial_score', 'do_not_assign_with']
@@ -347,6 +408,10 @@ class ParticipantForm(FormWithTags):
 
 
 class FileUploadWidget(FileInput):
+  """A custom file upload widget.
+
+  The regular one is very ugly.  This is a known trick to get a file upload field that plays nicely with bootstrap.
+  """
   def render(self, name, value, attrs=None):
     attrs['style'] = attrs.get('style', ' ') + 'display: none;'
     return format_html("""<label class="btn btn-default btn-file">Browse {}</label><span class="file-upload-path"></span>""",
@@ -354,6 +419,7 @@ class FileUploadWidget(FileInput):
 
 
 class ParticipantImportForm(Form):
+  """Form for providing an import data source for participant data."""
   file = FileField(label='Upload file', required=False, widget=FileUploadWidget)
   url = URLField(label='Fetch from URL', required=False)
 
@@ -384,6 +450,9 @@ class TagChoicesFormsetMixin(object):
   """Formset mixin with hacks to pass the sets of tag choices into each form.
 
   Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
+
+  Note that this is different from FormWithTagsBase above.  That is a base class for a form, this is
+  a mixin for a formset.
   """
   def __init__(self, *args, **kwargs):
     event = kwargs.pop('event')
@@ -396,7 +465,7 @@ class TagChoicesFormsetMixin(object):
     return kwargs
 
 
-class InlineFormsetWithTagChoices(TagChoicesFormsetMixin, BaseInlineFormSet):
+class InlineFormsetWithTagChoicesBase(TagChoicesFormsetMixin, BaseInlineFormSet):
   """InlineFormset base with a hack to pass the set of tag choices into each form.
 
   Otherwise django will re-evaluate the queryset (and hit the database) for every form in the formset.
@@ -405,7 +474,7 @@ class InlineFormsetWithTagChoices(TagChoicesFormsetMixin, BaseInlineFormSet):
 
 
 class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
-  """Formset base with hacks to pass the sets of tag and participant choices into each form.
+  """Formset mixin with hacks to pass the sets of tag and participant choices into each form.
 
   Otherwise django will re-evaluate the querysets (and hit the database) for every form in the formset.
   """
@@ -431,6 +500,7 @@ class ParticipantAndTagChoicesFormsetMixin(TagChoicesFormsetMixin):
 
 
 class TaskFormsetMixin(ParticipantAndTagChoicesFormsetMixin):
+  """Formset mixin for editing tasks."""
   def __init__(self, *args, **kwargs):
     queryset = kwargs.get('queryset')
     super(TaskFormsetMixin, self).__init__(*args, **kwargs)
@@ -452,14 +522,17 @@ class TaskFormsetMixin(ParticipantAndTagChoicesFormsetMixin):
 
 
 class TaskInlineFormset(TaskFormsetMixin, BaseInlineFormSet):
+  """InlineFormset for editing tasks that all share a foreign key to a single TaskType."""
   pass
 
 
 class TaskModelFormset(TaskFormsetMixin, BaseModelFormSet):
+  """ModelFormset for editing tasks that don't share a foreign key to anything."""
   pass
 
 
 class ParticipantInlineFormset(ParticipantAndTagChoicesFormsetMixin, BaseInlineFormSet):
+  """Formset for editing participants inline."""
   def add_fields(self, form, index):
     super(ParticipantInlineFormset, self).add_fields(form, index)
     # The naive to_python queries the database each time.  But we know we've already fetched
