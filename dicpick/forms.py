@@ -106,7 +106,7 @@ class TagForm(DicPickModelFormBase):
     qualifier = 'tag'
 
   def __init__(self, *args, **kwargs):
-    kwargs.pop('tags_by_id')  # Our superclass provides this. We don't need it but we must discard it anyway.
+    kwargs.pop('tags_by_id')  # We don't need it but we must discard it anyway.
     super(TagForm, self).__init__(*args, **kwargs)
 
 
@@ -365,7 +365,7 @@ class ParticipantForm(FormWithTagsBase):
 
   def __init__(self, *args, **kwargs):
     # Apply the hack to pass the id -> user map into the widget.
-    # See ParticipantInlineFormset below for details.
+    # See UserWidget above and ParticipantAndTagChoicesFormsetMixin below for details.
     participants_by_id = kwargs.pop('participants_by_id')
     users_by_id = kwargs.pop('users_by_id')
     super(ParticipantForm, self).__init__(*args, **kwargs)
