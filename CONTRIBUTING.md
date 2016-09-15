@@ -113,6 +113,33 @@ language preference appropriately.  In the future, if we want to allow other cam
 or if we want to support other real languages, we'll need a more generic mechanism for matching users to languages.
 
 
+Select2 and Autocomplete
+------------------------
+We enhance our select boxes using the excellent [select2](https://select2.github.io/) library.
+This provides us with two important benefits:
+
+- A Facebook-style multi-select widget.
+- Autocompletion of options from a remote data source.
+
+Why does this matter?
+The DICPick UI contains a lot of multiple-select boxes, for tags and for participants. And these are
+replicated across all forms in a formset.
+
+For example, each participant has a "do not assign with" widget, where you can select other 
+participants not to be assigned to the same task as this one. With 100 participants, that's 
+100 select boxes on the page. And using a standard <select> each one
+would have 100 <option> elements leading to 10,000 <option> elements on the page. This is
+slow both on the server (when rendering the page) and on the client (when rendering it).
+
+This is why autocomplete is so beneficial: The only <option> elements on the page are those
+of the actually selected options.
+
+There is a downside: select2 initialization is slow, and since we can have a few hundred of
+these widgets on a page, it can take a couple of seconds for the page to initialize after
+it loads. There may be some improvements we can make, but this would require performance
+profiling.
+
+
 Deploying DICPick
 -----------------
 

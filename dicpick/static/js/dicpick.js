@@ -1,11 +1,12 @@
+// Initialize some dynamic UI elements.
 $(function() {
-  // Initialize the assignees select box.
-
+  // Get the autocomplete URLs for tags and participants.
   var pathParts = window.location.pathname.split('/');
   var eventPathPrefix = pathParts[1] + '/' + pathParts[2];  // pathParts[0] is expected to be an empty string.
   var tagAutoCompleteUrl = eventPathPrefix + '/tags/autocomplete/';
   var participantAutocompleteUrl = eventPathPrefix + '/participants/autocomplete/';
 
+  // Initialize all assignees select boxes to use select2 with autocomplete.
   $('.with-select2 select.field-assignees').each(function() {
     var numPeople = parseInt($(this).closest('tr').find('input.field-num_people').val());
     $(this).select2({
@@ -27,6 +28,7 @@ $(function() {
         function classForProp(prop) {
           return item[prop] ? ' ' + prop.replace(/_/g, '-') : '';
         }
+        // Modify the result template to show icons indicating why a participant cannot be assigned to this task.
         return '<div class="assignee-option' +
                             classForProp('disqualified_for_date') +
                             classForProp('disqualified_for_tags') + '"' +
@@ -42,6 +44,7 @@ $(function() {
     });
   });
 
+  // Initialize all do-not-assign-to select boxes to use select2 with autocomplete.
   $('.with-select2 select.field-do_not_assign_to').each(function() {
 
     $(this).select2({
@@ -66,6 +69,7 @@ $(function() {
     });
   });
 
+  // Initialize all do-not-assign-with select boxes to use select2 with autocomplete.
   $('select.field-do_not_assign_with').each(function() {
 
     $(this).select2({
@@ -88,6 +92,7 @@ $(function() {
     });
   });
 
+  // Initialize all tags boxes to use select2 with autocomplete.
   $('select.field-tags').each(function() {
 
     $(this).select2({
@@ -110,27 +115,25 @@ $(function() {
     });
   });
 
-  // Initialize date fields.
-
+  // Initialize date fields to use the datepicker widget.
   $('.widget-dateinput').datepicker({
     format: 'mm/dd/yyyy',
     assumeNearbyYear: true,
     autoclose: true
   });
 
-  // Initialize tooltips.
-
+  // Initialize all tooltips.
   $('[data-toggle="tooltip"]').tooltip();
 
-  // Initialize fileinputs.
-
+  // Initialize fileinputs to be prettier and more bootstrappy.
   $('.widget-fileuploadwidget').on('change', function() {
     var input = $(this);
     var fileName = input.val().replace(/\\/g, '/').replace(/.*\//, '');
     input.parent().siblings('.file-upload-path').text(fileName);
   });
 
-  // Initialize add more rows button.
+  // Initialize the "add more rows" button for formsets.  It duplicates the last row, modifies
+  // its ids and names, and updates the Django formset's management form.
   $('#add-formset-form').on('click', function(e) {
     e.preventDefault();
     // The last real row is the one right before the row the button is in.
