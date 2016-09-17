@@ -127,11 +127,11 @@ replicated across all forms in a formset.
 
 For example, each participant has a "do not assign with" widget, where you can select other 
 participants not to be assigned to the same task as this one. With 100 participants, that's 
-100 select boxes on the page. And using a standard <select> each one
-would have 100 <option> elements leading to 10,000 <option> elements on the page. This is
+100 select boxes on the page. And using a standard &lt;select&gt; each one
+would have 100 &lt;option&gt; elements leading to 10,000 &lt;option&gt; elements on the page. This is
 slow both on the server (when rendering the page) and on the client (when rendering it).
 
-This is why autocomplete is so beneficial: The only <option> elements on the page are those
+This is why autocomplete is so beneficial: The only &lt;option&gt; elements on the page are those
 of the actually selected options.
 
 There is a downside: select2 initialization is slow, and since we can have a few hundred of
@@ -151,3 +151,37 @@ in `materiality.commons` for details on the deploy steps.
 
 In particular, see [materiality.django.static](https://github.com/benjyw/materiality.commons/tree/master/src/python/materiality/django/static)
 in `materiality.commons` for details on how static assets are gathered.
+
+The DICPick production site uses SendGrid for sending password reset emails, and New Relic for monitoring.
+
+The Initial Deploy
+------------------
+
+The initial deploy required creating various config variables: 
+
+| Variable name        | Value
+|----------------------|---------------------
+|DATABASE_URL          | &lt;provided by Heroku&gt;
+|DICPICK_ENV           | dicpick_prod
+|NEWRELIC_API_KEY      | &lt;provided by New Relic&gt;
+|NEW_RELIC_APP_NAME    | &lt;provided by New Relic&gt;
+|NEW_RELIC_LICENSE_KEY | &lt;provided by New Relic&gt;
+|NEW_RELIC_LOG         | stdout
+|SECRET_KEY            | &lt;django secret key, generated at initial deploy&gt;
+|SENDGRID_PASSWORD     | &lt;provided by SendGrid&gt;
+|SENDGRID_USERNAME     | &lt;provided by SendGrid&gt;
+|WEB_CONCURRENCY       | 2
+
+These don't need changing when redeploying, but the information is preserved here for posterity.
+
+Debugging in Production
+-----------------------
+
+If you want to temporarily turn debug mode on in production, set TEMPORARY_PROD_DEBUG_MODE_REMOVE_ME:
+
+`heroku config:set TEMPORARY_PROD_DEBUG_MODE_REMOVE_ME=1`
+
+But remember to unset it as soon as you've debugged whatever problem you've encountered:
+
+`heroku config:unset TEMPORARY_PROD_DEBUG_MODE_REMOVE_ME`
+
