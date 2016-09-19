@@ -18,7 +18,7 @@ from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
 from django.forms import inlineformset_factory, modelformset_factory
-from django.http import JsonResponse, HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import translation
 from django.utils.functional import cached_property
@@ -26,12 +26,11 @@ from django.utils.translation import ugettext as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
 from dicpick.assign import assign_for_task_ids
-from dicpick.forms import (EventForm, InlineFormsetWithTagChoicesBase,
-                           ParticipantForm, ParticipantImportForm, ParticipantInlineFormset,
-                           TagForm, TaskByDateForm, TaskByTypeForm, TaskTypeForm,
-                           TaskInlineFormset, TaskModelFormset)
-from dicpick.models import Camp, Event, Participant, Task, TaskType, Tag, Assignment
-from dicpick.templatetags.dicpick_helpers import date_to_pretty_str, is_burn, burn_logo
+from dicpick.forms import (EventForm, InlineFormsetWithTagChoicesBase, ParticipantForm,
+                           ParticipantImportForm, ParticipantInlineFormset, TagForm, TaskByDateForm,
+                           TaskByTypeForm, TaskInlineFormset, TaskModelFormset, TaskTypeForm)
+from dicpick.models import Assignment, Camp, Event, Participant, Tag, Task, TaskType
+from dicpick.templatetags.dicpick_helpers import burn_logo, date_to_pretty_str, is_burn
 from dicpick.util import create_user
 
 

@@ -8,7 +8,6 @@ from django.contrib import admin
 
 from dicpick.models import Camp, Event, Participant, Tag, Task, TaskType
 
-
 admin.site.register(Camp)
 admin.site.register(Event)
 admin.site.register(Tag)

@@ -11,9 +11,8 @@ from django.contrib.auth import views as auth_views
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic import RedirectView, TemplateView
 
-from dicpick.monkeypatch import auth_with_email
 from dicpick import urls as dicpick_urls
-
+from dicpick.monkeypatch import auth_with_email
 
 urlpatterns = [
   url(r'^admin/', admin.site.urls),

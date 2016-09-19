@@ -7,17 +7,17 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 import re
 
 import requests
-from django.db import transaction
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
-from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, FileField, Form, HiddenInput,
-                          ModelForm, MultiValueField, MultiWidget, SelectMultiple, TextInput, URLField,
-                          ValidationError, FileInput, ModelMultipleChoiceField, Field)
+from django.db import transaction
+from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, Field, FileField, FileInput,
+                          Form, HiddenInput, ModelForm, ModelMultipleChoiceField, MultiValueField,
+                          MultiWidget, SelectMultiple, TextInput, URLField, ValidationError)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 from django.utils.translation import ugettext as _
 
-from dicpick.models import Event, Participant, Tag, Task, TaskType, Assignment
+from dicpick.models import Assignment, Event, Participant, Tag, Task, TaskType
 from dicpick.templatetags.dicpick_helpers import date_to_slug
 from dicpick.util import create_user
 

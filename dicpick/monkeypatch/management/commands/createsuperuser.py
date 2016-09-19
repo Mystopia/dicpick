@@ -8,7 +8,6 @@ from django.contrib.auth.management.commands.createsuperuser import Command as C
 
 from dicpick.monkeypatch import auth_with_email
 
-
 # Note that this lives under dicpick.monkeypatch.management, instead of under dicpick.management,
 # so that we can put it above django.contrib.auth in INSTALLED_APPS, thus overriding the standard createsuperuser.
 

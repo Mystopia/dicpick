@@ -10,8 +10,7 @@ from collections import defaultdict
 from django.db import transaction
 from django.db.models import Count, F
 
-from dicpick.models import Task, Assignment
-
+from dicpick.models import Assignment, Task
 
 """Helper functions to auto-assign participants to tasks."""
 
