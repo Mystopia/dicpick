@@ -97,6 +97,41 @@ Things to note:
     - `settings_prod.py` reads secret settings from the Heroku environment.
 
 
+Code Style
+----------
+
+We basically follow pep8, except with 2-space indents and 120 character lines.
+
+### File Boilerplate
+
+Every file (apart from `__init__.py` files, all of which must be empty - see below) must have the following header:
+
+```
+# coding=utf-8
+# Copyright 2016 Mystopia.
+
+from __future__ import (absolute_import, division, generators, nested_scopes,
+                        print_function, unicode_literals, with_statement)
+```
+
+(With the copyright year adjusted appropriately).
+
+
+### Import Sorting
+
+Run `./isort.sh` before committing, to ensure correct ordering of imports.
+
+
+### `__init__.py`
+
+`__init__.py` files should never contain code. They should be empty, and exist merely to mark packages.
+
+
+### Tests
+
+Unfortunately we don't currently have any tests.  TODO: Write some.
+
+
 I18N
 ----
 We use Django's i18n facilities to support the DIC terminology for Mystopia while allowing other camps to 
