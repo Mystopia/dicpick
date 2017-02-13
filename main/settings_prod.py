@@ -34,7 +34,11 @@ DATABASES = {
 
 DATABASES['default']['CONN_MAX_AGE'] = 3600
 
-ALLOWED_HOSTS = ['.dicpick.herokuapp.com', '.dicpick.com']
+ALLOWED_HOSTS = [
+    '.herokuapp.com',
+    '.dicpick.herokuapp.com',
+    '.dicpick.com',
+]
 
 STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
 
