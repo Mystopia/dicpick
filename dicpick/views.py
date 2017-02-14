@@ -8,7 +8,7 @@ import csv
 import datetime
 import json
 import re
-import StringIO
+import io
 import textwrap
 from collections import defaultdict
 
@@ -518,7 +518,7 @@ class AllTasks(EventRelatedTemplateMixin, TemplateView):
     if emit_csv:
       assignments = self._get_assignments_dict()
       dates = list(self.event.date_range())
-      data = StringIO.StringIO()
+      data = io.StringIO()
       out = csv.writer(data)
       out.writerow([''] + [dt.strftime('%a. %m/%d') for dt in dates])
       for task_type in self.event.task_types.all():
