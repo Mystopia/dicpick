@@ -69,7 +69,7 @@ target/
 # Repo setup stuff
 .bootstrap
 venv/
+venv3/
 pgsql/
 latest.dump
 main/settings_local.py
-
