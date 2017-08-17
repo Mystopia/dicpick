@@ -53,6 +53,3 @@ EMAIL_HOST_USER = os.environ['SENDGRID_USERNAME']
 EMAIL_HOST_PASSWORD = os.environ['SENDGRID_PASSWORD']
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-
-# Required by the deploy script, to signal a successful deploy.
-NEWRELIC_API_KEY = os.environ['NEWRELIC_API_KEY']
