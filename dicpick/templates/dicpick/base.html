@@ -11,15 +11,9 @@
   <meta name="description" content="" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <base href="/">
-  {% if debug %}
-  <link rel="stylesheet" href="{% static 'local/css/bootstrap.min.css' %}" />
-  <link rel="stylesheet" href="{% static 'local/css/select2.min.css' %}" />
-  <link rel="stylesheet" href="{% static 'local/css/bootstrap-datepicker3.min.css' %}" />
-  {% else %}
   <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.2/css/select2.min.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker3.min.css" />
-  {% endif %}
   <link rel="stylesheet" href="{% static 'css/dicpick.css' %}" />
 {% endblock head %}
 </head>
@@ -61,19 +55,12 @@
   </div>
 </footer>
 
-{% if debug %}
-<script src="{% static 'local/js/jquery-2.2.3.min.js' %}"></script>
-<script src="{% static 'local/js/bootstrap.min.js' %}"></script>
-<script src="{% static 'local/js/select2.min.js' %}"></script>
-<script src="{% static 'local/js/bootstrap-datepicker.min.js' %}"></script>
-{% else %}
 <script  src="https://code.jquery.com/jquery-2.2.3.min.js"
          integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="
          crossorigin="anonymous"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.2/js/select2.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/js/bootstrap-datepicker.min.js"></script>
-{% endif %}
 {% block extra_js %}
 {% endblock extra_js %}
 <script src="{% static 'js/dicpick.js' %}"></script>

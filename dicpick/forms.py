@@ -10,9 +10,9 @@ import requests
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import transaction
-from django.forms import (BaseInlineFormSet, BaseModelFormSet, CharField, Field, FileField, FileInput,
-                          Form, HiddenInput, ModelForm, ModelMultipleChoiceField, MultiValueField,
-                          MultiWidget, SelectMultiple, TextInput, URLField, ValidationError)
+from django.forms import (BaseInlineFormSet, BaseModelFormSet, Field, FileField, FileInput,
+                          Form, ModelForm, ModelMultipleChoiceField, SelectMultiple, TextInput, URLField,
+                          ValidationError)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
 from django.utils.translation import ugettext as _
@@ -221,7 +221,9 @@ class TaskFormBase(FormWithTagsBase):
       # Create <option> elements for the currently selected values in this form, so that the initial data displays
       # correctly. We don't create <option> elements for all other possible participant choices. They will come from
       # select2's autocomplete mechanism.
-      field.choices = [(field.prepare_value(participants_by_id[x]), field.label_from_instance(participants_by_id[x]))
+      self.initial.get(field_name, [])
+      field.choices = [(field.prepare_value(participants_by_id[x.id]),
+                        field.label_from_instance(participants_by_id[x.id]))
                        for x in self.initial.get(field_name, [])]
       field.participants_by_id = participants_by_id
       field.widget.attrs['dp-for-date'] = self.instance.date
