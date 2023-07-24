@@ -72,4 +72,4 @@ venv/
 pgsql/
 latest.dump
 main/settings_local.py
-
+.env

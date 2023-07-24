@@ -4,7 +4,7 @@
 from __future__ import (absolute_import, division, generators, nested_scopes,
                         print_function, unicode_literals, with_statement)
 
-import debug_toolbar
+# import debug_toolbar
 from django.conf.urls import include, url
 from django.contrib import admin
 from django.contrib.auth import views as auth_views
@@ -25,7 +25,7 @@ urlpatterns = [
   url(r'^terms/$', TemplateView.as_view(template_name='dicpick/terms.html'), name='terms'),
   url(r'^favicon.ico$', RedirectView.as_view(url=staticfiles_storage.url('favicon.ico'), permanent=False)),
 
-  url(r'^__debug__/', include(debug_toolbar.urls)),
+  # url(r'^__debug__/', include(debug_toolbar.urls)),
   url(r'^', include(dicpick_urls, namespace='dicpick')),
 ]
 

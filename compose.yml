@@ -1,0 +1,29 @@
+version: "3"
+
+volumes:
+  db-data:
+
+services:
+  web:
+    build: .
+    # command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn main.wsgi -b :8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+    environment:
+      - SECRET_KEY
+    restart: unless-stopped
+  db:
+    image: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    restart: unless-stopped
+
