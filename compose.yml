@@ -22,8 +22,9 @@ services:
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB
-      - POSTGRES_USER
-      - POSTGRES_PASSWORD
+      - DEFAULT_DATABASE_NAME
+      - DEFAULT_DATABASE_USER
+      - DEFAULT_DATABASE_PASSWORD
+      - DEFAULT_DATABASE_HOST
+      - DEFAULT_DATABASE_PORT
     restart: unless-stopped
-

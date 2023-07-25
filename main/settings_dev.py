@@ -23,16 +23,16 @@ except ImportError as e:
   sys.exit(1)
 
 
-#DATABASES = {
-#    'default': {
-#        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-#        'NAME': 'dicpick',
-#        'USER': 'dicpick',
-#        'PASSWORD': DEFAULT_DATABASE_PASSWORD,
-#        'HOST': '127.0.0.1',
-#        'PORT': '5432',
-#    }
-#}
+DATABASES = {
+   'default': {
+       'ENGINE': 'django.db.backends.postgresql_psycopg2',
+       'NAME': DEFAULT_DATABASE_NAME,
+       'USER': DEFAULT_DATABASE_USER,
+       'PASSWORD': DEFAULT_DATABASE_PASSWORD,
+       'HOST': DEFAULT_DATABASE_HOST,
+       'PORT': DEFAULT_DATABASE_PORT,
+   }
+}
 
 
 WITH_CACHING = False
