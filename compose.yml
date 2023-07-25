@@ -28,3 +28,14 @@ services:
       - DEFAULT_DATABASE_HOST
       - DEFAULT_DATABASE_PORT
     restart: unless-stopped
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD
+      - PGADMIN_DISABLE_POSTFIX
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
