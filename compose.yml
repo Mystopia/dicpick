@@ -16,17 +16,20 @@ services:
       - db
     environment:
       - SECRET_KEY
+      - DEFAULT_DATABASE_NAME
+      - DEFAULT_DATABASE_USER
+      - DEFAULT_DATABASE_PASSWORD
+      - DEFAULT_DATABASE_HOST
+      - DEFAULT_DATABASE_PORT
     restart: unless-stopped
   db:
     image: postgres
     volumes:
       - db-data:/var/lib/postgresql/data
     environment:
-      - DEFAULT_DATABASE_NAME
-      - DEFAULT_DATABASE_USER
-      - DEFAULT_DATABASE_PASSWORD
-      - DEFAULT_DATABASE_HOST
-      - DEFAULT_DATABASE_PORT
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
     restart: unless-stopped
   pgadmin:
     image: dpage/pgadmin4
