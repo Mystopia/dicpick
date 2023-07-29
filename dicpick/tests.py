@@ -1,9 +1,14 @@
 # coding=utf-8
 # Copyright 2016 Mystopia.
 
-from __future__ import (absolute_import, division, generators, nested_scopes,
-                        print_function, unicode_literals, with_statement)
 
-from django.test import TestCase
+from django.test import SimpleTestCase
 
-# Alas, no tests yet.
+
+class TestTrue(SimpleTestCase):
+    def test_true_is_not_false(self):
+        self.assertTrue(True is not False)
+
+    def test_false_is_true_raises(self):
+        with self.assertRaises(AssertionError):
+            self.assertTrue(False)
