@@ -69,9 +69,6 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = (
-  # Above django.contrib.staticfiles, so it can overide the standard collectstatic command.
-  'materiality.django.static',
-
   # Above django.contrib.auth, so it can override the standard createsuperuser command.
   'dicpick.monkeypatch',
 
@@ -177,10 +174,8 @@ TEMPLATES = [
 
 DEFAULT_FROM_EMAIL = 'no-reply@mystopia.camp'
 
-MATERIALITY_DJANGO_STATIC_IGNORE_FILE = 'main/ignore_patterns.txt'
-
 DATE_INPUT_FORMATS = [
   '%m/%d/%Y'
 ]
 
-DEBUG_TOOLBAR_PATCH_SETTINGS = False
+# DEBUG_TOOLBAR_PATCH_SETTINGS = False
