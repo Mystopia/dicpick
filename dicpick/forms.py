@@ -29,7 +29,7 @@ class DicPickModelFormBase(ModelForm):
   """Base class for forms that edit a single model instance."""
   def __init__(self, *args, **kwargs):
     super(DicPickModelFormBase, self).__init__(*args, **kwargs)
-    for field in self.fields.values():
+    for field in list(self.fields.values()):
       field.error_messages = {'required': 'Required'}
 
   # A 'designator' is a property of the model that should not be edited by a given form,

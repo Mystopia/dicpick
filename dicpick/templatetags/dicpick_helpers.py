@@ -124,6 +124,6 @@ def has_required_fields(form):
 
 def _has_field_with_property(form, predicate):
   if isinstance(form, BaseForm):
-    return any(predicate(x) for x in form.fields.values())
+    return any(predicate(x) for x in list(form.fields.values()))
   else:  # Assume it's a FormSet.
-    return any(predicate(x) for x in form.forms[0].fields.values())
+    return any(predicate(x) for x in list(form.forms[0].fields.values()))

@@ -16,10 +16,10 @@ from dicpick.models import Camp, Event, Tag, TaskType
 def _safe_save(obj):
   try:
     obj.save()
-    print('{} saved'.format(obj))
+    print(('{} saved'.format(obj)))
     return True
   except IntegrityError:
-    print('{} already exists'.format(obj))
+    print(('{} already exists'.format(obj)))
     return False
 
 

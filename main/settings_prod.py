@@ -40,7 +40,7 @@ ALLOWED_HOSTS = [
     '.dicpick.com',
 ]
 
-STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 def maybe_cache_templates(loaders):
   return (

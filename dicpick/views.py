@@ -8,7 +8,7 @@ import csv
 import datetime
 import json
 import re
-import StringIO
+import io
 import textwrap
 from collections import defaultdict
 
@@ -32,6 +32,7 @@ from dicpick.forms import (EventForm, InlineFormsetWithTagChoicesBase, Participa
 from dicpick.models import Assignment, Camp, Event, Participant, Tag, Task, TaskType
 from dicpick.templatetags.dicpick_helpers import burn_logo, date_to_pretty_str, is_burn
 from dicpick.util import create_user
+from functools import reduce
 
 
 # Many views share common functionality (such as converting camp and event slugs to objects).
@@ -518,7 +519,7 @@ class AllTasks(EventRelatedTemplateMixin, TemplateView):
     if emit_csv:
       assignments = self._get_assignments_dict()
       dates = list(self.event.date_range())
-      data = StringIO.StringIO()
+      data = io.StringIO()
       out = csv.writer(data)
       out.writerow([''] + [dt.strftime('%a. %m/%d') for dt in dates])
       for task_type in self.event.task_types.all():
