@@ -1,24 +1,24 @@
 version: "3"
 
-# networks:
-#   caddy:
-#     external: true
-#   dicpick:
+networks:
+  caddy:
+    external: true
+  dicpick:
 
-# volumes:
-#   db-data:
+volumes:
+  db-data:
 
 services:
   web:
     build: .
-    command: python manage.py runserver 0.0.0.0:8000
-    # command: gunicorn main.wsgi -b :8000
+    # command: python manage.py runserver 0.0.0.0:8000
+    command: gunicorn main.wsgi -b :8000
     ports:
       - 8000:8000
     volumes:
       - .:/code
-    # depends_on:
-    #   - db
+    depends_on:
+      - db
     environment:
       - DJANGO_SETTINGS_MODULE=main.settings_production
       - SECRET_KEY
@@ -28,45 +28,45 @@ services:
       - DEFAULT_DATABASE_HOST
       - DEFAULT_DATABASE_PORT
     restart: unless-stopped
-    # networks:
-    #   - dicpick
-    #   - caddy
-    # labels:
-    #   caddy: ${WEB_LABELS_CADDY_FQDN:?err}
-    #   caddy.reverse_proxy: "{{upstreams 8000}}"
+    networks:
+      - dicpick
+      - caddy
+    labels:
+      caddy: ${WEB_LABELS_CADDY_FQDN:?err}
+      caddy.reverse_proxy: "{{upstreams 8000}}"
 
-  # db:
-  #   image: postgres
-  #   volumes:
-  #     - db-data:/var/lib/postgresql/data
-  #   environment:
-  #     - POSTGRES_DB
-  #     - POSTGRES_USER
-  #     - POSTGRES_PASSWORD
-  #   restart: unless-stopped
-  #   networks:
-  #     - dicpick
+  db:
+    image: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+    restart: unless-stopped
+    networks:
+      - dicpick
 
-  # pgadmin:
-  #   image: dpage/pgadmin4
-  #   restart: unless-stopped
-  #   environment:
-  #     - PGADMIN_DEFAULT_EMAIL
-  #     - PGADMIN_DEFAULT_PASSWORD
-  #     - PGADMIN_DISABLE_POSTFIX
-  #   depends_on:
-  #     - db
-  #   networks:
-  #     - dicpick
-  #     - caddy
-  #   labels:
-  #     caddy: ${PGADMIN_LABELS_CADDY_FQDN:-pgadmin.duckdns.org}
-  #     caddy.reverse_proxy: "{{upstreams 80}}"
+  pgadmin:
+    image: dpage/pgadmin4
+    restart: unless-stopped
+    environment:
+      - PGADMIN_DEFAULT_EMAIL
+      - PGADMIN_DEFAULT_PASSWORD
+      - PGADMIN_DISABLE_POSTFIX
+    depends_on:
+      - db
+    networks:
+      - dicpick
+      - caddy
+    labels:
+      caddy: ${PGADMIN_LABELS_CADDY_FQDN:-pgadmin.duckdns.org}
+      caddy.reverse_proxy: "{{upstreams 80}}"
 
-  # redirect_notice:
-  #   image: python:3-alpine
-  #   command: python -m http.server --directory /app
-  #   ports:
-  #   - "8000:8000"
-  #   volumes:
-  #     - ./redirect_notice.html:/app/index.html
+  redirect_notice:
+    image: python:3-alpine
+    command: python -m http.server --directory /app
+    ports:
+    - "8000:8000"
+    volumes:
+      - ./redirect_notice.html:/app/index.html
