@@ -1,3 +1,4 @@
 django
+pyscopg2
 requests
 whitenoise
