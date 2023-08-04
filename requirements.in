@@ -1,4 +1,5 @@
 django
+django-debug-toolbar
 gunicorn
 pyscopg2
 requests

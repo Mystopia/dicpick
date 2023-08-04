@@ -19,10 +19,16 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+    # Uncomment to see the debug toolbar.
+    'debug_toolbar',
+
     'dicpick.apps.DicPickConfig',
 ]
 
 MIDDLEWARE = [
+    # Uncomment to see the debug toolbar.
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
+
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',  # https://whitenoise.readthedocs.io/en/latest/django.html#enable-whitenoise
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -33,7 +39,24 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+# Django Debug Toolbar
+# https://django-debug-toolbar.readthedocs.io/en/latest/installation.html
+
+INTERNAL_IPS = [
+    "127.0.0.1",
+]
+
+
+# Security
+# https://docs.djangoproject.com/en/4.2/topics/security/
+
+# python manage.py check --deploy
+
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_HSTS_PRELOAD = True
+# SECURE_HSTS_SECONDS = 1
+# SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True

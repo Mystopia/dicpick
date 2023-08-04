@@ -36,7 +36,7 @@ urlpatterns = [
   path('terms/', TemplateView.as_view(template_name='dicpick/terms.html'), name='terms'),
   path('favicon.ico', RedirectView.as_view(url=staticfiles_storage.url('favicon.ico'), permanent=False)),
 
-  # url(r'^__debug__/', include(debug_toolbar.urls)),
+  path("__debug__/", include("debug_toolbar.urls")),
   path('', include(dicpick_urls, namespace='dicpick')),
 ]
 
