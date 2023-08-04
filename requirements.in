@@ -1,4 +1,5 @@
 django
+gunicorn
 pyscopg2
 requests
 whitenoise
