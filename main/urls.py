@@ -23,11 +23,11 @@ from django.contrib.staticfiles.storage import staticfiles_storage
 from django.views.generic import RedirectView, TemplateView
 
 from dicpick import urls as dicpick_urls
-# from dicpick.monkeypatch import auth_with_email
+from dicpick.monkeypatch import auth_with_email
 
 urlpatterns = [
   path('admin/', admin.site.urls),
-  # path('accounts/login/', auth_views.login),
+  path('accounts/login/', auth_views.LoginView.as_view(next_page='/')),
   path('accounts/', include('django.contrib.auth.urls')),
 
   path('faq/', TemplateView.as_view(template_name='dicpick/faq.html'), name='faq'),
@@ -42,4 +42,4 @@ urlpatterns = [
 
 
 # Monkeypatching goes here because this file is guaranteed to execute before any requests are handled.
-# auth_with_email.patch()
+auth_with_email.patch()
