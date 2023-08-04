@@ -22,7 +22,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.utils import translation
 from django.utils.functional import cached_property
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 from django.views.generic import CreateView, DeleteView, DetailView, FormView, TemplateView, UpdateView, View
 
 from dicpick.assign import assign_for_task_ids
@@ -67,10 +67,10 @@ class IsCampAdminMixin(UserPassesTestMixin, CampRelatedMixin):
     # We hard-code some special casing for mystopia.  If other camps want their own special language
     # variant, we'll come up with a more dynamic approach.
     # Note that setting the language in the session here will only take effect on the next request.
-    if self.camp.slug == 'mystopia':
-      request.session[translation.LANGUAGE_SESSION_KEY] = 'en-mystopia'
-    else:
-      request.session[translation.LANGUAGE_SESSION_KEY] = 'en'
+    # if self.camp.slug == 'mystopia':
+    #   request.session[translation.LANGUAGE_SESSION_KEY] = 'en-mystopia'
+    # else:
+    #   request.session[translation.LANGUAGE_SESSION_KEY] = 'en'
     return super(IsCampAdminMixin, self).get(request, *args, **kwargs)
 
 

@@ -8,14 +8,14 @@ import re
 
 import requests
 from django.contrib.auth.models import User
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.db import transaction
 from django.forms import (BaseInlineFormSet, BaseModelFormSet, Field, FileField, FileInput,
                           Form, ModelForm, ModelMultipleChoiceField, SelectMultiple, TextInput, URLField,
                           ValidationError)
 from django.forms.utils import pretty_name
 from django.utils.html import format_html
-from django.utils.translation import ugettext as _
+from django.utils.translation import gettext_lazy as _
 
 from dicpick.models import Assignment, Event, Participant, Tag, Task, TaskType
 from dicpick.templatetags.dicpick_helpers import date_to_slug
@@ -94,7 +94,7 @@ class FormWithTagsBase(DicPickModelFormBase):
     # correctly. We don't create <option> elements for all other possible tag choices. They will come from select2's
     # autocomplete mechanism.
     field = self.fields['tags']
-    field.choices = [(field.prepare_value(tags_by_id[x]), field.label_from_instance(tags_by_id[x]))
+    field.choices = [(field.prepare_value(tags_by_id[x.id]), field.label_from_instance(tags_by_id[x.id]))
                      for x in self.initial.get('tags', [])]
 
 
@@ -305,7 +305,7 @@ class UserWidget(TextInput):
     self.users_by_id = None  # Will be set when the form is created.
     super(UserWidget, self).__init__(attrs)
 
-  def render(self, name, user_id, attrs=None):
+  def render(self, name, user_id=None, attrs=None, value=None, renderer=None):
     if user_id is None:
       value = ''
     else:
@@ -383,7 +383,7 @@ class ParticipantForm(FormWithTagsBase):
 
   def _get_validation_exclusions(self):
     # Don't validate the user field, because it will cause at least one db query per form in the formset.
-    return super(ParticipantForm, self)._get_validation_exclusions() + ['user']
+    return super(ParticipantForm, self)._get_validation_exclusions() | set(['user'])
 
 
 class FileUploadWidget(FileInput):
@@ -391,7 +391,7 @@ class FileUploadWidget(FileInput):
 
   The regular one is very ugly.  This is a known trick to get a file upload field that plays nicely with bootstrap.
   """
-  def render(self, name, value, attrs=None):
+  def render(self, name, value, attrs=None, renderer=None):
     attrs['style'] = attrs.get('style', ' ') + 'display: none;'
     return format_html("""<label class="btn btn-default btn-file">Browse {}</label><span class="file-upload-path"></span>""",
                        super(FileUploadWidget, self).render(name, None, attrs=attrs))
