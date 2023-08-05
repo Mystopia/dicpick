@@ -27,10 +27,10 @@ class Camp(models.Model):
   slug = models.SlugField(max_length=10, unique=True, db_index=True)
 
   # Members of this group are admins for this camp.
-  admin_group = models.OneToOneField(Group, unique=True, related_name='+')
+  admin_group = models.OneToOneField(Group, unique=True, related_name='+', on_delete=models.CASCADE)
 
   # Members of this group are members of this camp.
-  member_group = models.OneToOneField(Group, unique=True, related_name='+')
+  member_group = models.OneToOneField(Group, unique=True, related_name='+', on_delete=models.CASCADE)
 
   def get_absolute_url(self):
     return reverse('dicpick:camp_detail', kwargs={'camp_slug': self.slug})
@@ -71,7 +71,7 @@ class Event(ModelWithDateRange):
     unique_together = [('camp', 'name'), ('camp', 'slug')]
 
   # The camp this event belongs to.
-  camp = models.ForeignKey(Camp, related_name='events')
+  camp = models.ForeignKey(Camp, related_name='events', on_delete=models.CASCADE)
 
   # Human-readable event name.
   name = models.CharField(max_length=40, help_text='E.g., "Burning Man 2016".')
@@ -131,7 +131,7 @@ class Tag(models.Model):
 
   # The event this tag is relevant to.  If multiple events have the same taggable concepts, the
   # tags must be recreated for each event.
-  event = models.ForeignKey(Event, related_name='tags')
+  event = models.ForeignKey(Event, related_name='tags', on_delete=models.CASCADE)
 
   # The tag text.
   name = models.CharField(max_length=20)
@@ -149,10 +149,10 @@ class Participant(ModelWithDateRange):
     unique_together = [('event', 'user')]
 
   # The event.
-  event = models.ForeignKey(Event, related_name='participants')
+  event = models.ForeignKey(Event, related_name='participants', on_delete=models.CASCADE)
 
   # The underlying user.
-  user = models.ForeignKey(User)
+  user = models.ForeignKey(User, on_delete=models.CASCADE)
 
   # Tags assigned to this participant.
   tags = models.ManyToManyField(Tag, related_name='participants', blank=True)
@@ -209,7 +209,7 @@ class TaskType(ModelWithDateRange):
   class Meta:
     unique_together = [('event', 'name')]
 
-  event = models.ForeignKey(Event, related_name='task_types')
+  event = models.ForeignKey(Event, related_name='task_types', on_delete=models.CASCADE)
 
   # Human-readable name of the task type.
   name = models.CharField(max_length=40)
@@ -243,7 +243,7 @@ class Task(models.Model):
     ordering = ['task_type__name', 'date']
 
   # The type of this task.
-  task_type = models.ForeignKey(TaskType, related_name='tasks')
+  task_type = models.ForeignKey(TaskType, related_name='tasks', on_delete=models.CASCADE)
 
   # The date on which this task is to be performed.
   date = models.DateField(db_index=True)

@@ -8,6 +8,7 @@ from django.conf.urls import url
 
 from dicpick import views
 
+app_name = 'dicpick'
 urlpatterns = [
   url(r'^$', views.user_home, name='user_home'),
 
