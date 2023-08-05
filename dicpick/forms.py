@@ -94,7 +94,8 @@ class FormWithTagsBase(DicPickModelFormBase):
     # correctly. We don't create <option> elements for all other possible tag choices. They will come from select2's
     # autocomplete mechanism.
     field = self.fields['tags']
-    field.choices = [(field.prepare_value(tags_by_id[x]), field.label_from_instance(tags_by_id[x]))
+    import ipdb; ipdb.set_trace()
+    field.choices = [(field.prepare_value(tags_by_id[x.id]), field.label_from_instance(tags_by_id[x.id]))
                      for x in self.initial.get('tags', [])]
 
 
@@ -222,6 +223,7 @@ class TaskFormBase(FormWithTagsBase):
       # correctly. We don't create <option> elements for all other possible participant choices. They will come from
       # select2's autocomplete mechanism.
       self.initial.get(field_name, [])
+      import ipdb; ipdb.set_trace()
       field.choices = [(field.prepare_value(participants_by_id[x]),
                         field.label_from_instance(participants_by_id[x]))
                        for x in self.initial.get(field_name, [])]
@@ -374,11 +376,12 @@ class ParticipantForm(FormWithTagsBase):
     self.fields['user'].widget.users_by_id = users_by_id
 
     do_not_assign_with_field = self.fields['do_not_assign_with']
+    import ipdb; ipdb.set_trace()
     # Create <option> tags for the currently selected values in this form, so that the initial data displays
     # correctly. We don't create <option> tags for all other possible participant choices, as there may be many
     # participants X many forms in the formset.  The other choices will come from the remote autocomplete view.
-    do_not_assign_with_field.choices = [(do_not_assign_with_field.prepare_value(participants_by_id[x]),
-                                         do_not_assign_with_field.label_from_instance(participants_by_id[x]))
+    do_not_assign_with_field.choices = [(do_not_assign_with_field.prepare_value(participants_by_id[x.id]),
+                                         do_not_assign_with_field.label_from_instance(participants_by_id[x.id]))
                                         for x in self.initial.get('do_not_assign_with', [])]
 
   def _get_validation_exclusions(self):

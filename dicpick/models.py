@@ -8,6 +8,8 @@ from datetime import timedelta
 
 from django.contrib.auth.models import Group, User
 from django.core.urlresolvers import reverse
+
+# from django.urls import reverse
 from django.db import models
 from django.db.models import F, Sum
 from django.utils.functional import cached_property

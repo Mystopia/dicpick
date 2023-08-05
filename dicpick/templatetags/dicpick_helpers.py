@@ -68,6 +68,7 @@ def add_standard_classes(bound_field):
   widget_name = type(bound_field.field.widget).__name__.lower()
   form_control_class = '' if widget_name == 'checkboxinput' else 'form-control'
   css_class = '{} field-{} widget-{}'.format(form_control_class, bound_field.name, widget_name)
+  # import ipdb; ipdb.set_trace()
   return bound_field.as_widget(attrs={'class':css_class})
 
 
@@ -126,4 +127,5 @@ def _has_field_with_property(form, predicate):
   if isinstance(form, BaseForm):
     return any(predicate(x) for x in list(form.fields.values()))
   else:  # Assume it's a FormSet.
+    import ipdb; ipdb.set_trace()
     return any(predicate(x) for x in list(form.forms[0].fields.values()))
