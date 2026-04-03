@@ -7,6 +7,8 @@ from __future__ import (absolute_import, division, generators, nested_scopes,
 import re
 
 import requests
+import socket
+import ipaddress
 from django.contrib.auth.models import User
 from django.core.urlresolvers import reverse
 from django.db import transaction
@@ -397,6 +399,30 @@ class FileUploadWidget(FileInput):
                        super(FileUploadWidget, self).render(name, None, attrs=attrs))
 
 
+def _validate_import_url(url):
+  """Validate that the given URL is safe to fetch for participant import.
+
+  Disallows non-HTTP(S) schemes and URLs that resolve to private or loopback addresses.
+  """
+  # Only allow http and https schemes.
+  from urlparse import urlparse
+  parsed = urlparse(url)
+  if parsed.scheme not in ('http', 'https'):
+    raise ValidationError('Only HTTP and HTTPS URLs are allowed.')
+  if not parsed.hostname:
+    raise ValidationError('Invalid URL: hostname is missing.')
+
+  try:
+    addr_info = socket.getaddrinfo(parsed.hostname, None)[0]
+    ip_str = addr_info[4][0]
+    ip = ipaddress.ip_address(ip_str)
+  except (socket.error, ValueError):
+    raise ValidationError('Could not resolve host for URL: {}'.format(url))
+
+  if ip.is_private or ip.is_loopback or ip.is_link_local:
+    raise ValidationError('URLs to private or local addresses are not allowed.')
+
+
 class ParticipantImportForm(Form):
   """Form for providing an import data source for participant data."""
   file = FileField(label='Upload file', required=False, widget=FileUploadWidget)
@@ -413,6 +439,8 @@ class ParticipantImportForm(Form):
 
     if has_url:
       url = self.cleaned_data.get('url')
+      # Validate the URL to reduce risk of SSRF.
+      _validate_import_url(url)
       try:
         r = requests.get(url)
       except IOError as e:
